@@ -93,10 +93,25 @@ Screens (router-based): projects -> points -> addPoint -> pointDetail -> addLaye
 
 When you add 02B, gate it on `f_type === "Hand Auger"` the same targeted-swap way the bedrock sections are gated - don't full re-render the form.
 
-## ON THE HORIZON - DO NOT BUILD UNTIL TED SAYS SO
+## ON THE HORIZON — what Ted wants next (NOT built yet, do not build without his go-ahead)
 
-- Site Plan connection: Ted flagged that the Site Plan should eventually connect to this workflow and activate once a project is active.
-- This crosses into Master Tracker / project-activation systems. Do not connect it automatically and do not modify those modules unless Ted explicitly asks for that work in a future session.
+The field app is **considered complete for now** (as of 2026-06-07 session 3). Ted is moving to other work and will return to these. Captured here so next session has his intent without him re-explaining:
+
+### 1. Connect the field data to the Site Plan (the big next step)
+
+**The goal in Ted’s words:** the field data should *project onto the site plan based on the coordinates.* Each logged point (TP/HA/OP) has a lat/lng captured via the GPS button (or entered manually). Those coordinates are what place the point on the site plan. So the seam between this app and the Site Plan system is the **coordinate data** — the app already collects it (lat, lng, accuracy on every point, and exports it; note the `06_Point_Location_Export` output is intended but not yet built — see “still missing” #3 above; it’s needed for this).
+
+- The Site Plan system is the separate `generate_site_plan_v2.py` QGIS workflow (file ID `1rpZ4n2saHDGO5_vsb-VNe1YJoPE9dUGs`, under `06_Automation_REPLACEMENT`). It expects point-location columns that match the `06_Point_Location_Export` sheet headers.
+- **What to build when Ted says go:** make the app export (or feed) the point coordinates in the shape the site plan generator expects, so the field points drop onto the site plan at their real locations. Likely the missing `out_06` / point-location CSV is the bridge.
+- **Rule reminder:** this connects two modules (Field App ↔ Site Plan). Per Ted’s standing rule, do NOT wire them together until he explicitly says so. He has now flagged intent, but wait for the explicit “connect them” before building the link.
+
+### 2. Activation once a project is active
+
+Ted wants the app to tie in so that **once a project is activated (made an active project), this field logging is part of that flow.** This crosses into project activation / Master Tracker territory — also gated. Details TBD; he said “let’s just get to that” later. Do not build until he scopes it.
+
+### 3. “Something to implement later”
+
+Ted mentioned a further feature beyond the above but deferred it (“we also want to implement something later but for now…”). Unspecified. Ask him what it was when he returns to this.
 
 ## VERIFY-BEFORE-HANDOFF CHECKLIST
 

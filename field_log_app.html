@@ -636,7 +636,14 @@ function showLog(projectId,pointId){
     const mat=l.layerType==="Bedrock"?(l.bedrockType||"Bedrock"):(l.uscs||"");
     const unit=`${l.layerType}\n${l.geoUnit||""}\n${mat}\n${att}`;
     const desc=l.description+(l.color?`\n${l.color}`:"")+(l.moisture?`\n${l.moisture}`:"")+(l.density?`, ${l.density}`:"")+(l.weathering?`\n${l.weathering}`:"")+(l.notes?`\n${l.notes}`:"");
-    const samp=ls.map(s=>`${s.sampleId||s.id}\n${s.type}@${s.depth}ft${s.blows?" ("+s.blows+"bl)":""}`).join("\n---\n");
+    const samp=ls.map(s=>{
+      const lines=[];
+      if(s.depth) lines.push(`${s.depth}ft`);
+      if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
+      if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
+      if(s.blows) lines.push(`${s.blows} blows`);
+      return lines.join("\n");
+    }).filter(Boolean).join("\n---\n");
     rows+=`<tr><td class="col-depth">${esc(l.topDepth||"0")}\n—\n${esc(l.bottomDepth||"?")}</td>
       <td class="col-sample">${esc(samp)}</td><td class="col-unit">${esc(unit)}</td><td class="col-desc">${esc(desc)}</td></tr>`;
   });

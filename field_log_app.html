@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>GeoTed Field Logs</title>
+<title>LA Soil Reports Field Logs</title>
 <style>
 :root{
   --bg:#f2f4f7;--card:#fff;--ink:#16181d;--sub:#5c6370;--hint:#9aa0ab;
@@ -136,7 +136,7 @@ html,body{background:#dde1e9;font-family:-apple-system,BlinkMacSystemFont,"Segoe
 
 <div id="logOverlay">
   <div class="log-wrap">
-    <div class="log-topbar"><h2 id="logTitle">GeoTed — Log</h2>
+    <div class="log-topbar"><h2 id="logTitle">LA Soil Reports — Log</h2>
       <button class="btn btn-ghost btn-sm" onclick="closeLog()">✕ Close</button></div>
     <div id="logBody"></div>
   </div>
@@ -184,11 +184,22 @@ const USCS_DESC = {
 
 // Geologic units, grouped by layer type. From V2 10_Geologic_Unit_Lookup.
 const GEO_UNITS = {
-  "Fill":["Af — Artificial fill"],
+  "Fill":["Af — Artificial fill","Cf — Compacted fill"],
   "Native Soil":["Qa — Alluvium","Qc — Colluvium","Qoa — Older alluvium"],
   "Bedrock":["M — Miocene bedrock","Tmss — Topanga Fm sandstone/shale",
              "Tush — Unnamed shale, claystone/siltstone","Tuss — Unnamed shale, sandstone facies",
              "Tm — Monterey Fm","QTs — Saugus Fm","Tps — Pico Fm sandstone","Kcs — Chatsworth sandstone"],
+};
+
+const GEO_UNIT_DESC = {
+  "M":"Miocene bedrock, tan to brown, dense to very dense, moderately weathered.",
+  "Tmss":"Topanga Formation sandstone and shale, tan to brown, interbedded, dense to very dense, moderately weathered.",
+  "Tush":"Unnamed shale, claystone and siltstone, light gray to tan, thinly bedded, moderately weathered, crumbly where weathered.",
+  "Tuss":"Unnamed shale, sandstone facies, tan to gray, fine to medium grained, moderately weathered, moderately hard.",
+  "Tm":"Monterey Formation shale, light gray to tan, thinly bedded to laminated, moderately weathered, moderately hard.",
+  "QTs":"Saugus Formation sandstone and conglomerate, tan to reddish brown, medium to coarse grained, moderately consolidated, dense.",
+  "Tps":"Pico Formation sandstone, tan to brown, fine to medium grained, dense, moderately weathered.",
+  "Kcs":"Chatsworth sandstone, tan to gray, medium to coarse grained, dense to very dense, hard, moderately weathered."
 };
 
 // Bedrock types -> description + weathering + structure. From V2 11_Bedrock_Lookup.
@@ -241,8 +252,9 @@ function renderProjects(){
         return `<div class="card"><div class="card-row" onclick="go('points','${p.id}')">
           <span class="badge">${p.id}</span><div><div class="card-title">${p.address}</div>
           <div class="card-sub">${p.city}, ${p.state} ${p.zip} · ${n} point${n!==1?"s":""}</div></div>
+          <button class="btn-close" style="color:var(--danger);margin-left:auto;" onclick="event.stopPropagation();removeProject('${p.id}')">×</button>
           <span class="chevron">›</span></div></div>`;}).join("");
-  return `<div class="hdr"><div class="hdr-title">GeoTed Field Logs</div>
+  return `<div class="hdr"><div class="hdr-title">LA Soil Reports Field Logs</div>
     <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">${cards}</div>`;
 }
 function openAddProject(){document.getElementById("addProjectOverlay").classList.add("show");
@@ -273,6 +285,13 @@ function confirmProject(id){
 function closeConfirm(){document.getElementById("confirmProjectOverlay").classList.remove("show");}
 function addProject(id){const p=ALL_PROJECTS.find(x=>x.id===id);state.activeProjects.push(p);
   if(!state.points[id])state.points[id]=[];saveState();closeConfirm();render();}
+function removeProject(id){
+  const p=getProject(id);
+  if(!confirm(`Remove ${p.id} from this app? This deletes its local points from this device only.`))return;
+  state.activeProjects=state.activeProjects.filter(x=>x.id!==id);
+  delete state.points[id];
+  saveState();render();
+}
 
 // ════════════ POINTS ════════════
 function getProject(id){return state.activeProjects.find(p=>p.id===id)||ALL_PROJECTS.find(p=>p.id===id)||{id,address:"",city:"",state:""};}
@@ -493,7 +512,7 @@ function uscsControl(d){
 }
 function geoControl(d){
   const opts=["—",...(GEO_UNITS[d.layerType]||[])];
-  return sel("f_geoUnit",opts,d.geoUnit||"—");
+  return sel("f_geoUnit",opts,d.geoUnit||"—",'onchange="onGeoUnitChange()"');
 }
 function weatherControl(d){
   // bedrock type may constrain weathering; default to full list
@@ -525,6 +544,17 @@ function onUscsChange(){
     if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
       document.getElementById("descNote").classList.remove("hidden");}}
 }
+function geoUnitCode(value){
+  return String(value||"").split("—")[0].trim();
+}
+function onGeoUnitChange(){
+  const lt=document.getElementById("f_layerType").value;
+  if(lt!=="Bedrock")return;
+  const desc=GEO_UNIT_DESC[geoUnitCode(safeVal("f_geoUnit"))];
+  if(desc){const ta=document.getElementById("f_description");
+    if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
+      document.getElementById("descNote").classList.remove("hidden");}}
+}
 function onBedrockTypeChange(){
   const bt=safeVal("f_bedrockType");
   const info=BEDROCK_TYPES[bt];
@@ -536,15 +566,25 @@ function onBedrockTypeChange(){
   document.getElementById("weatherWrap").innerHTML=sel("f_weathering",["—",...info.weathering],"—");
   document.getElementById("bedWrap").innerHTML=sel("f_bedding",["—",...info.structure],"—");
 }
+function capToTotalDepth(value,totalDepth,label){
+  const d=parseFloat(value), td=parseFloat(totalDepth);
+  if(!isNaN(d)&&!isNaN(td)&&d>td){
+    alert(`${label} cannot exceed total depth (${td} ft). It was set to ${td} ft.`);
+    return String(td);
+  }
+  return value;
+}
 function saveLayer(projectId,pointId,layerId,isEdit){
   const lt=v("f_layerType");
-  const layer={id:layerId,layerType:lt,topDepth:v("f_topDepth"),bottomDepth:v("f_bottomDepth"),
+  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
+  const pt=pts[i];
+  const bottomDepth=capToTotalDepth(v("f_bottomDepth"),pt.totalDepth,"Layer bottom depth");
+  const layer={id:layerId,layerType:lt,topDepth:v("f_topDepth"),bottomDepth:bottomDepth,
     uscs:lt==="Bedrock"?"":cleanDash(v("f_uscs")),geoUnit:cleanDash(v("f_geoUnit")),
     bedrockType:lt==="Bedrock"?cleanDash(v("f_bedrockType")):"",
     description:v("f_description"),color:cleanDash(v("f_color")),moisture:v("f_moisture"),density:v("f_density"),
     weathering:cleanDash(v("f_weathering")),bedding:cleanDash(v("f_bedding")),contact:cleanDash(v("f_contact")),
     strike:v("f_strike"),dip:v("f_dip"),dipDir:v("f_dipDir"),notes:v("f_notes")};
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
   if(isEdit)pts[i].layers=pts[i].layers.map(l=>l.id===layerId?layer:l);else pts[i].layers.push(layer);
   saveState();go("pointDetail",projectId,pointId);
 }
@@ -613,10 +653,12 @@ function onSampleDepth(projectId,pointId,ptId){
     :`<div class="note-warn">⚠ No layer covers ${esc(depth)}ft — add the layer first</div>`;
 }
 function saveSample(projectId,pointId,sampleId,isEdit){
-  const s={id:sampleId,sampleId:v("f_sampleId"),depth:v("f_depth"),type:v("f_type"),
+  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
+  const pt=pts[i];
+  const depth=capToTotalDepth(v("f_depth"),pt.totalDepth,"Sample depth");
+  const s={id:sampleId,sampleId:v("f_sampleId"),depth:depth,type:v("f_type"),
     blows:v("f_blows"),fieldMoisture:v("f_fieldMoisture"),fieldDensity:v("f_fieldDensity"),
     blows6in:v("f_blows6in"),samplingMethod:v("f_samplingMethod"),notes:v("f_notes")};
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
   if(isEdit)pts[i].samples=pts[i].samples.map(x=>x.id===sampleId?s:x);else pts[i].samples.push(s);
   saveState();go("pointDetail",projectId,pointId);
 }
@@ -628,7 +670,7 @@ function deleteSample(projectId,pointId,sampleId){if(!confirm("Delete this sampl
 function showLog(projectId,pointId){
   const p=getProject(projectId);
   const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[],samples:[]};
-  document.getElementById("logTitle").textContent=`GeoTed — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
+  document.getElementById("logTitle").textContent=`LA Soil Reports — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
   let rows="";
   pt.layers.forEach(l=>{
     const ls=pt.samples.filter(s=>{const d=parseFloat(s.depth||99);return d>=parseFloat(l.topDepth||0)&&d<=parseFloat(l.bottomDepth||99);});

@@ -65,11 +65,23 @@ Screens (router-based): projects -> points -> addPoint -> pointDetail -> addLaye
 - **Remove project from the app:** small red x on each active project card -> `removeProject()`, confirms, deletes that project + its points from localStorage (declutters the list). Re-addable from the + picker.
 - Log preview sample column simplified to: depth once, then DD pcf / MC % / blows - only fields that have values.
 
+### Added 2026-06-07 (session 3)
+
+- **Geologic units replaced with the 19 VERIFIED Dibblee units** from `GeoTed_VERIFIED_Geologic_Unit_Lookup_Dibblee_20260514.xlsx` (Drive, file ID `1DnCsyRqYSCFUWhgkah2n_UM3vwckAxIm`). Bedrock list is now: qd, sms, Tush, Tuss, Tm, Tmss, Qoa, QTs, Tps, Tsr, Ttus, Ttucg, Tcvb, Tcva, Tvb, Kcs, Kcsh, Kcg, Tsus - using exact-case dropdown labels. Each has its Field Log Description wired into `GEO_UNIT_DESC` for auto-fill. **Do NOT add** Qof, Qsp, Qi, Tmat, Tma, Tmg, Tmv, Ttusi - the sheet marks these unverified. When the sheet adds more verified units, sync GEO_UNITS + GEO_UNIT_DESC from it.
+- **Sample-layer boundary fix:** a sample depth on a shared boundary (e.g. 5ft between Fill 0-5 and Native 5-6) now belongs to the UPPER layer. Lower layer requires depth strictly greater than its top. Fixed in both `matchLayer` and the log-preview filter.
+- **Strike auto-uppercases**; **Dip Direction is now a dropdown** of the two perpendiculars computed from the strike (e.g. N40W -> NE / SW) via `strikeToPerpendiculars` + `compassDir`.
+
+### Live hosting (set up session 2-3)
+
+- App is hosted on GitHub Pages: repo `https://github.com/geobutter821/geoted-field-log`, live URL `https://geobutter821.github.io/geoted-field-log/field_log_app.html`.
+- Preview URL for the file is `https://drive.google.com/file/d/1X__yHf2jvp5XLd0oichCID92NOTUx_Fk/preview` but Drive shows source, not rendered - GitHub Pages URL is the one to use on the phone.
+- Update flow: Ted downloads the new HTML from chat -> saves into `app_source_current` (Drive) -> Codex copies it into local repo `C:\temp\geoted-field-log\` -> commits + `git push origin main` -> Pages rebuilds in ~30s. Same fixed URL every time.
+
 ## EMBEDDED V2 DATA (matches the V2 lookup tabs - keep in sync if those change)
 
 - PICK lists: pointType, layerType, moisture, density, weathering, bedding, contact, groundwater, caving, backfilled, accuracy, sampleType, color.
 - `USCS_CODES` + `USCS_DESC` (soil only): SM, SC, CL, ML, GP, GM, SP, GC, CH, MH, SW, GW, CL-ML.
-- `GEO_UNITS` by layer type: Fill -> [Af, Cf]; Native Soil -> [Qa, Qc, Qoa]; Bedrock -> [M, Tmss, Tush, Tuss, Tm, QTs, Tps, Kcs].
+- `GEO_UNITS` by layer type: Fill -> [Af, Cf]; Native Soil -> [Qa, Qc, Qoa]; Bedrock -> [qd, sms, Tush, Tuss, Tm, Tmss, Qoa, QTs, Tps, Tsr, Ttus, Ttucg, Tcvb, Tcva, Tvb, Kcs, Kcsh, Kcg, Tsus].
 - `BEDROCK_TYPES`: "Sandstone and shale", "Sandstone", "Shale" (each with desc + weathering[] + structure[]).
 - `ALL_PROJECTS`: one project - 26-02, 16215 Dorilee Ln, Encino, CA 91436, lat 34.1329484, lng -118.485788, region M, defaultBedrock "Sandstone and shale".
 

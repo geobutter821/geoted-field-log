@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>LA Soil Reports Field Logs</title>
+<title>LA Soil Reports</title>
 <style>
 :root{
   --bg:#f2f4f7;--card:#fff;--ink:#16181d;--sub:#5c6370;--hint:#9aa0ab;
@@ -27,6 +27,8 @@ html,body{background:#dde1e9;font-family:-apple-system,BlinkMacSystemFont,"Segoe
   color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;}
 .btn-edit{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);
   font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;}
+.btn-remove{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--card);
+  color:var(--danger);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 .body{padding:14px 16px 110px;}
 .sec{font-size:11px;font-weight:700;color:var(--hint);letter-spacing:.8px;text-transform:uppercase;margin:18px 0 8px;}
@@ -186,20 +188,38 @@ const USCS_DESC = {
 const GEO_UNITS = {
   "Fill":["Af — Artificial fill","Cf — Compacted fill"],
   "Native Soil":["Qa — Alluvium","Qc — Colluvium","Qoa — Older alluvium"],
-  "Bedrock":["M — Miocene bedrock","Tmss — Topanga Fm sandstone/shale",
-             "Tush — Unnamed shale, claystone/siltstone","Tuss — Unnamed shale, sandstone facies",
-             "Tm — Monterey Fm","QTs — Saugus Fm","Tps — Pico Fm sandstone","Kcs — Chatsworth sandstone"],
+  "Bedrock":["qd — Quartz Diorite","sms — Santa Monica Slate",
+             "Tush — Unnamed Shale, claystone/siltstone","Tuss — Unnamed Shale, sandstone facies",
+             "Tm — Monterey Formation / Monterey Shale","Tmss — Monterey Formation sandstone",
+             "Qoa — Older alluvium","QTs — Saugus Formation","Tps — Pico Formation sandstone",
+             "Tsr — Saugus Formation, Sunshine Ranch Member","Ttus — Upper Topanga Formation sandstone",
+             "Ttucg — Upper Topanga conglomerate","Tcvb — Conejo Volcanics basaltic flows and breccias",
+             "Tcva — Conejo Volcanics andesitic flows and breccias","Tvb — Volcanic rocks",
+             "Kcs — Chatsworth sandstone","Kcsh — Chatsworth shale/siltstone",
+             "Kcg — Chatsworth conglomerate","Tsus — Santa Susana sandstone"],
 };
 
+// Bedrock geologic unit -> auto-fill FIELD LOG description (verified, from Dibblee lookup 20260514). Keyed by unit code prefix.
 const GEO_UNIT_DESC = {
-  "M":"Miocene bedrock, tan to brown, dense to very dense, moderately weathered.",
-  "Tmss":"Topanga Formation sandstone and shale, tan to brown, interbedded, dense to very dense, moderately weathered.",
-  "Tush":"Unnamed shale, claystone and siltstone, light gray to tan, thinly bedded, moderately weathered, crumbly where weathered.",
-  "Tuss":"Unnamed shale, sandstone facies, tan to gray, fine to medium grained, moderately weathered, moderately hard.",
-  "Tm":"Monterey Formation shale, light gray to tan, thinly bedded to laminated, moderately weathered, moderately hard.",
-  "QTs":"Saugus Formation sandstone and conglomerate, tan to reddish brown, medium to coarse grained, moderately consolidated, dense.",
-  "Tps":"Pico Formation sandstone, tan to brown, fine to medium grained, dense, moderately weathered.",
-  "Kcs":"Chatsworth sandstone, tan to gray, medium to coarse grained, dense to very dense, hard, moderately weathered."
+  "qd":"Quartz diorite, gray to light gray, medium grained, granitic, massive to locally vaguely gneissic, fractured and deeply weathered where exposed.",
+  "sms":"Santa Monica Slate, dark bluish gray slate-phyllite, weathering brown, fine grained, platy, fractured to locally sheared, with cleavage generally parallel to bedding.",
+  "Tush":"Light gray claystone and siltstone, moderately to vaguely bedded, crumbly where weathered.",
+  "Tuss":"Light gray sandstone, soft, friable, fine to medium grained.",
+  "Tm":"Monterey Formation shale/siltstone, thin bedded, locally siliceous, porcelaneous, or cherty, weathering variable from cream white to gray-brown.",
+  "Tmss":"Light gray to tan semi-friable sandstone, fine to medium grained, locally interbedded with siltstone and shale.",
+  "Qoa":"Older alluvial gravel, sand, and silt/clay, weakly consolidated and dissected where elevated.",
+  "QTs":"Weakly consolidated light gray pebble-cobble conglomerate and sandstone with minor claystone/siltstone.",
+  "Tps":"Light gray to nearly white, semi-friable sandstone, medium to coarse grained, locally pebbly and cross-bedded.",
+  "Tsr":"Light reddish to greenish claystone and sandstone with interbedded pebble-cobble conglomerate.",
+  "Ttus":"Light gray to tan, thick-bedded, semi-friable to coherent sandstone, locally pebbly.",
+  "Ttucg":"Pebble-cobble conglomerate of granitic and metavolcanic detritus in sandy matrix.",
+  "Tcvb":"Black to dark olive-brown basaltic flows and breccias, fine grained, locally amygdaloidal, altered and fractured.",
+  "Tcva":"Gray to maroon-gray and brown andesitic to basaltic flows and breccias, massive to vaguely stratified, fractured.",
+  "Tvb":"Dark brown to black basaltic to mafic andesitic volcanic rocks, locally flows and breccias.",
+  "Kcs":"Light gray to light brown, hard, thick-bedded sandstone, locally gritty, with minor micaceous siltstone and shale layers.",
+  "Kcsh":"Gray micaceous shale and siltstone, locally including sandstone strata.",
+  "Kcg":"Gray to brown crudely bedded cobble conglomerate of granitic, metavolcanic, and quartzite detritus in hard sandstone matrix.",
+  "Tsus":"Tan to light brown bedded coherent sandstone; forms local lenses in Santa Susana Formation."
 };
 
 // Bedrock types -> description + weathering + structure. From V2 11_Bedrock_Lookup.
@@ -249,12 +269,12 @@ function renderProjects(){
   const cards=projs.length===0
     ? `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No active projects</div><div class="empty-sub">Tap ＋ to add a project</div></div>`
     : projs.map(p=>{const n=(state.points[p.id]||[]).length;
-        return `<div class="card"><div class="card-row" onclick="go('points','${p.id}')">
-          <span class="badge">${p.id}</span><div><div class="card-title">${p.address}</div>
+        return `<div class="card"><div class="card-row">
+          <span class="badge">${p.id}</span><div style="flex:1;" onclick="go('points','${p.id}')"><div class="card-title">${p.address}</div>
           <div class="card-sub">${p.city}, ${p.state} ${p.zip} · ${n} point${n!==1?"s":""}</div></div>
-          <button class="btn-close" style="color:var(--danger);margin-left:auto;" onclick="event.stopPropagation();removeProject('${p.id}')">×</button>
-          <span class="chevron">›</span></div></div>`;}).join("");
-  return `<div class="hdr"><div class="hdr-title">LA Soil Reports Field Logs</div>
+          <button class="btn-remove" onclick="event.stopPropagation();removeProject('${p.id}')">✕</button>
+          <span class="chevron" onclick="go('points','${p.id}')">›</span></div></div>`;}).join("");
+  return `<div class="hdr"><div class="hdr-title">LA Soil Reports</div>
     <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">${cards}</div>`;
 }
 function openAddProject(){document.getElementById("addProjectOverlay").classList.add("show");
@@ -286,9 +306,12 @@ function closeConfirm(){document.getElementById("confirmProjectOverlay").classLi
 function addProject(id){const p=ALL_PROJECTS.find(x=>x.id===id);state.activeProjects.push(p);
   if(!state.points[id])state.points[id]=[];saveState();closeConfirm();render();}
 function removeProject(id){
-  const p=getProject(id);
-  if(!confirm(`Remove ${p.id} from this app? This deletes its local points from this device only.`))return;
-  state.activeProjects=state.activeProjects.filter(x=>x.id!==id);
+  const n=(state.points[id]||[]).length;
+  const msg=n>0
+    ?`Remove project ${id} from the app? This deletes its ${n} logged point${n!==1?"s":""} from this device. (The project can be re-added later, but the field data here will be gone.)`
+    :`Remove project ${id} from the app?`;
+  if(!confirm(msg))return;
+  state.activeProjects=state.activeProjects.filter(p=>p.id!==id);
   delete state.points[id];
   saveState();render();
 }
@@ -490,10 +513,11 @@ function renderAddLayer(){
     <div class="field ${d.layerType==="Bedrock"?"":"hidden"}" id="attitudeWrap">
       <div class="sec" style="margin-top:6px;">ATTITUDE (BEDROCK)</div>
       <div class="row2">
-        <div class="field"><div class="label">Strike</div><input class="input" id="f_strike" value="${esc(d.strike)}" placeholder="N40W"></div>
+        <div class="field"><div class="label">Strike</div><input class="input" id="f_strike" value="${esc(d.strike)}" placeholder="N40W" autocapitalize="characters" oninput="onStrikeChange()"></div>
         <div class="field"><div class="label">Dip</div><input class="input" id="f_dip" inputmode="decimal" value="${esc(d.dip)}" placeholder="35"></div>
       </div>
-      <div class="field"><div class="label">Dip Direction</div><input class="input" id="f_dipDir" value="${esc(d.dipDir)}" placeholder="SW"></div>
+      <div class="field"><div class="label">Dip Direction <span style="color:var(--ok);font-weight:400;">(perp. to strike)</span></div>
+        <div id="dipDirWrap">${dipDirControl(d)}</div></div>
     </div>
 
     <div class="sec">NOTES</div>
@@ -523,6 +547,42 @@ function bedControl(d){
   const opts=["—",...PICK.bedding];
   return sel("f_bedding",opts,d.bedding||"—");
 }
+// Convert a strike string (e.g. "N40W","N40E","E-W","N-S") to a bearing 0-180, then to the two perpendicular compass dirs.
+function strikeToPerpendiculars(strike){
+  if(!strike)return ["NE","SW","SE","NW"]; // fallback: offer all four common perpendiculars
+  const s=strike.toUpperCase().replace(/\s/g,"");
+  let bearing=null;
+  // forms like N40W / N40E / S30E / S15W
+  let m=s.match(/^([NS])(\d{1,3})([EW])$/);
+  if(m){
+    const deg=parseFloat(m[2]);
+    if(m[1]==="N"&&m[3]==="E")bearing=deg;
+    else if(m[1]==="N"&&m[3]==="W")bearing=360-deg;
+    else if(m[1]==="S"&&m[3]==="E")bearing=180-deg;
+    else if(m[1]==="S"&&m[3]==="W")bearing=180+deg;
+  } else if(s==="N-S"||s==="NS"||s==="N"){bearing=0;}
+  else if(s==="E-W"||s==="EW"||s==="E"){bearing=90;}
+  if(bearing===null)return ["NE","SW","SE","NW"];
+  bearing=((bearing%360)+360)%360;
+  // two perpendiculars = bearing ± 90
+  const p1=((bearing+90)%360), p2=((bearing+270)%360);
+  return [compassDir(p1),compassDir(p2)];
+}
+function compassDir(deg){
+  const dirs=["N","NE","E","SE","S","SW","W","NW"];
+  return dirs[Math.round(((deg%360)/45))%8];
+}
+function dipDirControl(d){
+  const opts=["—",...strikeToPerpendiculars(d.strike||"")];
+  const uniq=opts.filter((o,i)=>opts.indexOf(o)===i);
+  return sel("f_dipDir",uniq,d.dipDir||"—");
+}
+function onStrikeChange(){
+  const el=document.getElementById("f_strike");
+  el.value=el.value.toUpperCase();
+  const prev=safeVal("f_dipDir");
+  document.getElementById("dipDirWrap").innerHTML=dipDirControl({strike:el.value,dipDir:prev});
+}
 function onLayerTypeChange(){
   const lt=document.getElementById("f_layerType").value;
   // current values to preserve
@@ -544,16 +604,15 @@ function onUscsChange(){
     if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
       document.getElementById("descNote").classList.remove("hidden");}}
 }
-function geoUnitCode(value){
-  return String(value||"").split("—")[0].trim();
-}
 function onGeoUnitChange(){
-  const lt=document.getElementById("f_layerType").value;
-  if(lt!=="Bedrock")return;
-  const desc=GEO_UNIT_DESC[geoUnitCode(safeVal("f_geoUnit"))];
-  if(desc){const ta=document.getElementById("f_description");
-    if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
-      document.getElementById("descNote").classList.remove("hidden");}}
+  // pull the unit code (text before the em-dash), e.g. "Tmss — Topanga..." -> "Tmss"
+  const raw=safeVal("f_geoUnit");
+  const code=raw.split("—")[0].trim();
+  const desc=GEO_UNIT_DESC[code];
+  if(!desc)return;
+  const ta=document.getElementById("f_description");
+  if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
+    document.getElementById("descNote").classList.remove("hidden");}
 }
 function onBedrockTypeChange(){
   const bt=safeVal("f_bedrockType");
@@ -595,7 +654,14 @@ function deleteLayer(projectId,pointId,layerId){if(!confirm("Delete this layer?"
 // ════════════ ADD SAMPLE ════════════
 function matchLayer(pt,depth){
   const dep=parseFloat(depth);if(isNaN(dep)||!pt.layers)return null;
-  return pt.layers.find(l=>dep>=parseFloat(l.topDepth||0)&&dep<=parseFloat(l.bottomDepth||9999))||null;
+  // A depth on a shared boundary belongs to the UPPER layer.
+  // So a layer matches when: depth <= bottom, AND (depth > top, OR this is the surface layer at top=0 with depth=0).
+  return pt.layers.find(l=>{
+    const top=parseFloat(l.topDepth||0), bot=parseFloat(l.bottomDepth||9999);
+    if(dep>bot)return false;
+    if(dep>top)return true;
+    return dep===top&&top===0;
+  })||null;
 }
 function renderAddSample(){
   const p=getProject(route.projectId);
@@ -673,7 +739,7 @@ function showLog(projectId,pointId){
   document.getElementById("logTitle").textContent=`LA Soil Reports — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
   let rows="";
   pt.layers.forEach(l=>{
-    const ls=pt.samples.filter(s=>{const d=parseFloat(s.depth||99);return d>=parseFloat(l.topDepth||0)&&d<=parseFloat(l.bottomDepth||99);});
+    const ls=pt.samples.filter(s=>{const d=parseFloat(s.depth||99);const top=parseFloat(l.topDepth||0),bot=parseFloat(l.bottomDepth||99);if(isNaN(d)||d>bot)return false;if(d>top)return true;return d===top&&top===0;});
     const att=l.strike&&l.dip?`${l.strike}/${l.dip}${l.dipDir?" "+l.dipDir:""}`:"";
     const mat=l.layerType==="Bedrock"?(l.bedrockType||"Bedrock"):(l.uscs||"");
     const unit=`${l.layerType}\n${l.geoUnit||""}\n${mat}\n${att}`;
@@ -683,7 +749,7 @@ function showLog(projectId,pointId){
       if(s.depth) lines.push(`${s.depth}ft`);
       if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
       if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
-      if(s.blows) lines.push(`${s.blows} blows`);
+      if(s.blows) lines.push(`${s.blows} bl`);
       return lines.join("\n");
     }).filter(Boolean).join("\n---\n");
     rows+=`<tr><td class="col-depth">${esc(l.topDepth||"0")}\n—\n${esc(l.bottomDepth||"?")}</td>

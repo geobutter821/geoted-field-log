@@ -93,6 +93,11 @@ Screens (router-based): projects -> points -> addPoint -> pointDetail -> addLaye
 
 When you add 02B, gate it on `f_type === "Hand Auger"` the same targeted-swap way the bedrock sections are gated - don't full re-render the form.
 
+## ON THE HORIZON - DO NOT BUILD UNTIL TED SAYS SO
+
+- Site Plan connection: Ted flagged that the Site Plan should eventually connect to this workflow and activate once a project is active.
+- This crosses into Master Tracker / project-activation systems. Do not connect it automatically and do not modify those modules unless Ted explicitly asks for that work in a future session.
+
 ## VERIFY-BEFORE-HANDOFF CHECKLIST
 
 Run a quick check that:

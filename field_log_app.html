@@ -44,6 +44,25 @@ button,input{font:inherit}
 .kv{display:grid;grid-template-columns:104px 1fr;gap:7px 10px;font-size:13px}.k{color:var(--muted);font-weight:700}.v{color:var(--ink)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:460px;width:calc(100% - 28px);background:#111827;color:#fff;padding:12px 14px;border-radius:8px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .18s}.toast.show{opacity:1}
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* Folder grid */
+.folder-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.folder-tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:5px;box-shadow:var(--shadow)}
+.folder-tile:active{background:#f9fafb}
+.folder-icon{font-size:26px;line-height:1}
+.folder-tile-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
+.folder-tile-meta{font-size:11px;color:var(--muted);display:flex;gap:5px;align-items:center}
+.folder-tool-chip{background:var(--accent-soft);color:var(--accent-dark);border-radius:4px;padding:1px 5px;font-size:10px;font-weight:800}
+/* File list */
+.file-list{padding:0}
+.file-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.file-item:last-child{border-bottom:0}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.file-meta-row{font-size:11px;color:var(--muted);margin-top:2px}
+.file-open{font-size:20px;color:#98a2b3;text-decoration:none;flex-shrink:0;padding:4px}
+/* Drive link */
+.drive-link{display:block;font-size:12px;color:var(--accent);text-decoration:none;margin-bottom:10px;padding:6px 0}
+.drive-link:active{opacity:.7}
 </style>
 </head>
 <body>
@@ -53,7 +72,9 @@ button,input{font:inherit}
 const CFG_KEY="geoted_field_app_bridge_v1";
 const DEFAULT_WEB_APP_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6LDKgtBj9JFwLME9ShnOBjG4tINc8Em7XuHfHjIQvRLVtmUUNzZ1RccaEg/exec";
 const POLL_MS=5000;
-const state={view:"home",projects:[],project:null,status:null,loading:false,message:"",poll:null,lastStatusKey:""};
+const FOLDER_ICONS={"Figures":"📐","Logs & Lab & Calcs":"📋","Prior Reports":"📁","Report":"📄","PDF":"📑","Photos":"📷","Correspondences":"✉️","Emailed Plans":"📧","Proposal":"📝","Daily Field Reports":"📅"};
+const FOLDER_HAS_TOOL={"Figures":true,"Logs & Lab & Calcs":true,"Prior Reports":true,"Report":true};
+const state={view:"home",projects:[],project:null,subfolders:[],folder:null,folderFiles:[],status:null,loading:false,poll:null,lastStatusKey:""};
 
 function getCfg(){try{const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}");if(!cfg.url)cfg.url=DEFAULT_WEB_APP_URL;return cfg}catch(e){return {url:DEFAULT_WEB_APP_URL}}}
 function setCfg(cfg){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
@@ -61,6 +82,8 @@ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2600)}
 function stopPoll(){if(state.poll){clearInterval(state.poll);state.poll=null}}
 function statusKey(s){return JSON.stringify({status:s&&s.status||"",fig4:s&&s.fig4Link||"",fig5:s&&s.fig5Link||"",finished:s&&s.lastFinished||"",err:s&&s.errorNotes||""})}
+function normalizeFolder(name){return name.replace(/\s*\(\d+\)\s*$/,"").trim()}
+function folderIcon(name){return FOLDER_ICONS[normalizeFolder(name)]||"📂"}
 
 function bridge(action,payload={}){
   const cfg=getCfg();
@@ -86,15 +109,21 @@ function pdfEmbedUrl(url){
   return m?`https://drive.google.com/file/d/${m[1]}/preview`:url;
 }
 
+function formatFileDate(iso){
+  if(!iso) return "";
+  try{const d=new Date(iso);return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}catch(e){return ""}
+}
+
 function render(){
   const app=document.getElementById("app");
   if(state.view==="settings") return renderSettings(app);
+  if(state.view==="folder") return renderFolder(app);
   if(state.view==="project") return renderProject(app);
   return renderHome(app);
 }
 
-function shell(title,sub,body,back=false){
-  return `<div class="top">${back?`<button class="back" onclick="goHome()">&lt;</button>`:""}<div><div class="title">${esc(title)}</div><div class="sub">${esc(sub||"")}</div></div><div class="spacer"></div><button class="gear" onclick="openSettings()">Set</button></div><div class="body">${body}</div>`;
+function shell(title,sub,body,backFn){
+  return `<div class="top">${backFn?`<button class="back" onclick="${backFn}">&lt;</button>`:""}<div><div class="title">${esc(title)}</div><div class="sub">${esc(sub||"")}</div></div><div class="spacer"></div><button class="gear" onclick="openSettings()">Set</button></div><div class="body">${body}</div>`;
 }
 
 function renderHome(app){
@@ -102,44 +131,75 @@ function renderHome(app){
   let body="";
   if(!cfg.url) body+=setupCard();
   body+=`<div class="section">Active Projects</div>`;
-  if(state.loading) body+=`<div class="empty"><strong>Loading projects</strong>Reading the field workbook...</div>`;
-  else if(!state.projects.length) body+=`<div class="empty"><strong>No projects loaded</strong><button class="btn primary" onclick="loadProjects()">Load Projects</button></div>`;
+  if(state.loading) body+=`<div class="empty"><strong>Loading projects...</strong></div>`;
+  else if(!state.projects.length) body+=`<div class="empty"><strong>No projects loaded</strong><button class="btn primary" style="margin-top:14px" onclick="loadProjects()">Load Projects</button></div>`;
   else body+=state.projects.map(p=>`
-    <div class="card project" onclick="openProject('${esc(p.projectNumber)}')">
-      <div class="row"><span class="badge">${esc(p.projectNumber)}</span><div class="grow"><div class="name">${esc(p.address)}</div><div class="meta">${esc(p.city)}</div></div><div class="chev">&gt;</div></div>
+    <div class="card project" onclick="openProject(${JSON.stringify(p.folderId)},${JSON.stringify(p.projectNumber)},${JSON.stringify(p.name)})">
+      <div class="row"><span class="badge">${esc(p.projectNumber||"—")}</span><div class="grow"><div class="name">${esc(p.name)}</div></div><div class="chev">&gt;</div></div>
     </div>`).join("");
-  app.innerHTML=shell("LA Soil Reports","Figure pipeline",body);
+  app.innerHTML=shell("LA Soil Reports","Active projects",body,null);
 }
 
 function renderProject(app){
   const p=state.project;
   if(!p){goHome();return}
-  const status=state.status||p;
-  const busy=["Queued","Running"].includes(status.status);
-  const fig4=status.fig4Link||p.fig4Link||"";
-  const fig5=status.fig5Link||p.fig5Link||"";
-  const canGenerateSection=!!fig4&&!busy;
-  const statusClass=status.errorNotes?"err":busy?"warn":status.status==="Preview Ready"?"ok":"";
-  const fig4Pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:`<div class="empty"><strong>No site plan yet.</strong>Generate Figure 4 when you need it.</div>`;
-  const fig5Pdf=fig5?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig5))}" title="Figure 5 Cross-Section"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig5)}">Open Figure 5 in Drive</a></div>`:`<div class="empty"><strong>No cross-section yet.</strong>Generate Figure 5 when you need it.</div>`;
-  const body=`
-    <div class="card">
-      <div class="kv">
-        <div class="k">Project</div><div class="v">${esc(p.projectNumber)}</div>
-        <div class="k">Address</div><div class="v">${esc(p.address)}, ${esc(p.city)} ${esc(p.zip||"")}</div>
-        <div class="k">Points</div><div class="v">${esc(p.pointCount||0)}</div>
-        <div class="k">Status</div><div class="v">${esc(status.status||"No generation queued")}</div>
+  let body="";
+  if(state.loading) body=`<div class="empty"><strong>Loading folders...</strong></div>`;
+  else if(!state.subfolders.length) body=`<div class="empty"><strong>No subfolders found.</strong></div>`;
+  else body=`<div class="folder-grid">${state.subfolders.map(f=>{
+    const norm=normalizeFolder(f.name);
+    const hasTool=FOLDER_HAS_TOOL[norm]||false;
+    return `<div class="folder-tile" onclick="openFolder(${JSON.stringify(f.folderId)},${JSON.stringify(f.name)},${JSON.stringify(f.folderUrl||'')})">
+      <div class="folder-icon">${folderIcon(f.name)}</div>
+      <div class="folder-tile-name">${esc(f.name)}</div>
+      <div class="folder-tile-meta"><span>${f.fileCount} file${f.fileCount===1?"":"s"}</span>${hasTool?`<span class="folder-tool-chip">tool</span>`:""}</div>
+    </div>`;
+  }).join("")}</div>`;
+  app.innerHTML=shell(p.projectNumber,p.name,body,"goHome()");
+}
+
+function renderFolder(app){
+  const f=state.folder;
+  if(!f){goBackToProject();return}
+  const norm=normalizeFolder(f.name);
+  const isFigures=norm==="Figures";
+  let body="";
+  if(f.folderUrl) body+=`<a class="drive-link" href="${esc(f.folderUrl)}" target="_blank" rel="noopener">&#8599; Open folder in Google Drive</a>`;
+  if(isFigures) body+=renderFiguresTools();
+  if(state.loading) body+=`<div class="empty"><strong>Loading files...</strong></div>`;
+  else if(!state.folderFiles.length) body+=`<div class="empty"><strong>No files yet.</strong></div>`;
+  else body+=`<div class="card file-list">${state.folderFiles.map(file=>`
+    <div class="file-item">
+      <div class="file-info">
+        <div class="file-name">${esc(file.name)}</div>
+        <div class="file-meta-row">${esc(formatFileDate(file.modifiedTime))}${file.sizeKB?` · ${esc(String(file.sizeKB))} KB`:""}</div>
       </div>
-      <div class="actions">
-        <button class="btn primary" ${busy?"disabled":""} onclick="generateSitePlan()">${busy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
-        <button class="btn ghost" ${canGenerateSection?"":"disabled"} onclick="generateSection()">${busy?"Generating ~1 min":fig4?"Generate Cross-Section":"Generate Site Plan First"}</button>
-        <button class="btn ghost" onclick="refreshProject()">Refresh Status</button>
-      </div>
-      ${status.status||status.errorNotes?`<div class="status ${statusClass}">${esc(status.errorNotes||status.status||"")}${status.lastFinished?` - ${esc(status.lastFinished)}`:""}</div>`:""}
+      <a class="file-open" href="${esc(file.fileUrl)}" target="_blank" rel="noopener" title="Open in Drive">&#8599;</a>
+    </div>`).join("")}</div>`;
+  const p=state.project;
+  app.innerHTML=shell(f.name,p?p.projectNumber:"",body,"goBackToProject()");
+}
+
+function renderFiguresTools(){
+  const p=state.project;
+  if(!p) return "";
+  const s=state.status||{};
+  const busy=["Queued","Running"].includes(s.status);
+  const fig4=s.fig4Link||"";
+  const fig5=s.fig5Link||"";
+  const canSection=!!fig4&&!busy;
+  const statusClass=s.errorNotes?"err":busy?"warn":s.status==="Preview Ready"?"ok":"";
+  const fig4Pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:"";
+  const fig5Pdf=fig5?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig5))}" title="Figure 5 Cross-Section"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig5)}">Open Figure 5 in Drive</a></div>`:"";
+  return `<div class="card">
+    <div class="actions">
+      <button class="btn primary" ${busy?"disabled":""} onclick="generateSitePlan()">${busy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
+      <button class="btn ghost" ${canSection?"":"disabled"} onclick="generateSection()">${busy?"Generating…":fig4?"Generate Cross-Section":"Generate Site Plan First"}</button>
     </div>
-    <div class="section">Figure 4</div>${fig4Pdf}
-    <div class="section">Figure 5</div>${fig5Pdf}`;
-  app.innerHTML=shell(p.projectNumber,p.address,body,true);
+    ${s.status||s.errorNotes?`<div class="status ${statusClass}">${esc(s.errorNotes||s.status||"")}${s.lastFinished?` · ${esc(s.lastFinished)}`:""}</div>`:""}
+  </div>
+  ${fig4?`<div class="section">Figure 4</div>${fig4Pdf}`:""}
+  ${fig5?`<div class="section">Figure 5</div>${fig5Pdf}`:""}`;
 }
 
 function renderSettings(app){
@@ -150,7 +210,7 @@ function renderSettings(app){
       <div class="field"><div class="label">Web App URL</div><input id="webUrl" class="input" value="${esc(cfg.url||"")}" placeholder="https://script.google.com/macros/s/.../exec"></div>
       <div class="field"><div class="label">Shared token (optional)</div><input id="webToken" class="input" value="${esc(cfg.token||"")}" placeholder="Only if configured in Apps Script"></div>
       <button class="btn primary" onclick="saveSettings()">Save Settings</button>
-    </div>`,true);
+    </div>`,"goHome()");
 }
 
 function setupCard(){
@@ -159,36 +219,87 @@ function setupCard(){
 
 async function loadProjects(){
   state.loading=true;render();
-  try{state.projects=await bridge("listProjects");}
+  try{state.projects=await bridge("listActiveProjects");}
   catch(e){toast(e.message)}
   finally{state.loading=false;render()}
 }
-async function openProject(projectNumber){
-  stopPoll();state.view="project";state.project={projectNumber,address:"Loading..."};state.status=null;state.lastStatusKey="";render();
-  try{state.project=await bridge("getProject",{projectNumber});state.status=state.project;}
-  catch(e){toast(e.message);goHome();return}
-  state.lastStatusKey=statusKey(state.status);
+
+async function openProject(folderId,projectNumber,name){
+  stopPoll();
+  state.view="project";
+  state.project={folderId,projectNumber,name};
+  state.subfolders=[];
+  state.folder=null;
+  state.folderFiles=[];
+  state.status=null;
+  state.loading=true;
+  render();
+  try{state.subfolders=await bridge("listProjectFolders",{folderId});}
+  catch(e){toast(e.message)}
+  finally{state.loading=false;render()}
+}
+
+async function openFolder(folderId,folderName,folderUrl){
+  stopPoll();
+  state.view="folder";
+  state.folder={name:folderName,folderId,folderUrl:folderUrl||""};
+  state.folderFiles=[];
+  state.loading=true;
+  render();
+  try{
+    state.folderFiles=await bridge("listFolderFiles",{folderId});
+    if(normalizeFolder(folderName)==="Figures"&&state.project){
+      try{
+        state.status=await bridge("getStatus",{projectNumber:state.project.projectNumber});
+        state.lastStatusKey=statusKey(state.status);
+      }catch(e){}
+    }
+  }catch(e){toast(e.message)}
+  finally{state.loading=false;render()}
+  if(normalizeFolder(folderName)==="Figures"&&state.project&&state.status){
+    if(["Queued","Running"].includes(state.status.status)) startPolling(state.project.projectNumber);
+  }
+}
+
+function goBackToProject(){
+  stopPoll();
+  state.view="project";
+  state.folder=null;
+  state.folderFiles=[];
   render();
 }
-async function refreshProject(){if(state.project) await openProject(state.project.projectNumber)}
+
+function goHome(){
+  stopPoll();
+  state.view="home";
+  state.project=null;
+  state.subfolders=[];
+  state.folder=null;
+  state.folderFiles=[];
+  state.status=null;
+  render();
+}
+
 async function generateSitePlan(){
   if(!state.project)return;
   try{
     state.status={status:"Queued"};render();
     await bridge("generateSitePlan",{projectNumber:state.project.projectNumber});
     startPolling(state.project.projectNumber);
-  }catch(e){toast(e.message);await refreshProject()}
+  }catch(e){toast(e.message)}
 }
+
 async function generateSection(){
   if(!state.project)return;
-  const fig4=(state.status&&state.status.fig4Link)||(state.project&&state.project.fig4Link)||"";
+  const fig4=state.status&&state.status.fig4Link||"";
   if(!fig4){toast("Generate and review the site plan first.");return}
   try{
     state.status={status:"Queued"};render();
     await bridge("generateSection",{projectNumber:state.project.projectNumber});
     startPolling(state.project.projectNumber);
-  }catch(e){toast(e.message);await refreshProject()}
+  }catch(e){toast(e.message)}
 }
+
 function startPolling(projectNumber){
   stopPoll();
   state.poll=setInterval(async()=>{
@@ -200,7 +311,7 @@ function startPolling(projectNumber){
     }catch(e){toast(e.message);stopPoll()}
   },POLL_MS);
 }
-function goHome(){stopPoll();state.view="home";state.project=null;state.status=null;render()}
+
 function openSettings(){stopPoll();state.view="settings";render()}
 function saveSettings(){
   setCfg({url:document.getElementById("webUrl").value.trim(),token:document.getElementById("webToken").value.trim()});

@@ -2,812 +2,193 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LA Soil Reports">
+<meta name="theme-color" content="#f7f8fb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>LA Soil Reports</title>
 <style>
 :root{
-  --bg:#f2f4f7;--card:#fff;--ink:#16181d;--sub:#5c6370;--hint:#9aa0ab;
-  --line:#e3e6ea;--accent:#1a56db;--accent-soft:#ebf0ff;
-  --ok:#1a7a4d;--ok-soft:#e4f4ec;--warn:#b45309;--warn-soft:#fef3c7;
-  --danger:#c0392b;--danger-soft:#fdecea;
+  --bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#667085;--line:#d9dee7;
+  --accent:#0f766e;--accent-dark:#115e59;--accent-soft:#dff4ef;
+  --warn:#b45309;--warn-soft:#fff3d6;--danger:#b42318;--danger-soft:#fee4e2;
+  --ok:#166534;--ok-soft:#dcfce7;--shadow:0 1px 3px rgba(15,23,42,.10);
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
-html,body{background:#dde1e9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;line-height:1.45;color:var(--ink);}
-#app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;}
-
-.hdr{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
-  padding:12px 16px;display:flex;align-items:center;gap:10px;}
-.hdr-title{font-size:17px;font-weight:700;flex:1;}
-.hdr-sub{font-size:12px;color:var(--sub);}
-.btn-back{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);
-  font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.btn-icon{width:38px;height:38px;border:none;border-radius:10px;background:var(--accent);
-  color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;}
-.btn-edit{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);
-  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;}
-.btn-remove{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--card);
-  color:var(--danger);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-
-.body{padding:14px 16px 110px;}
-.sec{font-size:11px;font-weight:700;color:var(--hint);letter-spacing:.8px;text-transform:uppercase;margin:18px 0 8px;}
-.sec:first-child{margin-top:4px;}
-
-.card{background:var(--card);border-radius:14px;padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;}
-.card-row{display:flex;align-items:center;gap:12px;cursor:pointer;}
-.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;
-  background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12px;flex-shrink:0;white-space:nowrap;}
-.badge.ok{background:var(--ok-soft);color:var(--ok);}
-.card-title{font-weight:600;font-size:15px;}
-.card-sub{font-size:13px;color:var(--sub);margin-top:2px;}
-.chevron{color:var(--hint);font-size:20px;margin-left:auto;}
-
-.empty{text-align:center;padding:60px 20px 40px;}
-.empty-icon{font-size:44px;margin-bottom:12px;}
-.empty-title{font-weight:600;font-size:16px;margin-bottom:6px;}
-.empty-sub{color:var(--sub);font-size:14px;}
-
-.field{margin-bottom:11px;}
-.label{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:4px;}
-.input,.select,.textarea{width:100%;border:1px solid var(--line);border-radius:10px;
-  padding:11px 12px;font-size:16px;color:var(--ink);background:var(--card);
-  outline:none;appearance:none;-webkit-appearance:none;font-family:inherit;}
-.textarea{resize:none;line-height:1.5;}
-.input:focus,.select:focus,.textarea:focus{border-color:var(--accent);}
-.select{background-image:url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%228%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M1%201l5%205%205-5%22%20stroke%3D%22%235c6370%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.note-ok{font-size:12px;color:var(--ok);margin-top:4px;font-weight:500;}
-.note-warn{font-size:12px;color:var(--warn);margin-top:4px;font-weight:500;}
-.gps-btn{width:100%;border:1px dashed var(--accent);border-radius:10px;background:var(--accent-soft);
-  color:var(--accent);font-weight:600;font-size:14px;padding:11px;cursor:pointer;margin-bottom:10px;
-  display:flex;align-items:center;justify-content:center;gap:6px;}
-
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:15px;
-  padding:13px 20px;font-family:inherit;}
-.btn:active{opacity:.8;}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-ghost{background:var(--line);color:var(--ink);}
-.btn-danger{background:var(--danger-soft);color:var(--danger);}
-.btn-ok{background:var(--ok-soft);color:var(--ok);}
-.btn-sm{padding:8px 14px;font-size:13px;}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
-.btn-full{width:100%;}
-
-#saveBar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
-  background:var(--ok);color:#fff;text-align:center;font-size:13px;font-weight:600;
-  padding:9px;z-index:50;transition:opacity .4s;opacity:0;pointer-events:none;}
-#saveBar.show{opacity:1;}
-
-.overlay{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:none;align-items:flex-end;}
-.overlay.show{display:flex;}
-.sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;margin:0 auto;
-  max-height:85vh;overflow-y:auto;padding-bottom:24px;}
-.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:2px;margin:12px auto 0;}
-.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;}
-.sheet-head h3{font-size:17px;font-weight:700;}
-.btn-close{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;
-  background:var(--bg);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub);}
-.search-box{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
-  font-size:16px;background:var(--card);outline:none;margin-bottom:12px;}
-
-#logOverlay{display:none;position:fixed;inset:0;z-index:100;background:#fff;overflow-y:auto;}
-#logOverlay.show{display:block;}
-.log-wrap{max-width:720px;margin:0 auto;padding:10px 14px 40px;}
-.log-topbar{display:flex;justify-content:space-between;align-items:center;
-  padding:8px 0 6px;border-bottom:2px solid #000;margin-bottom:8px;}
-.log-topbar h2{font-size:14px;font-weight:700;font-family:monospace;}
-.log-grid{width:100%;border-collapse:collapse;font-family:monospace;font-size:11px;}
-.log-grid th,.log-grid td{border:1px solid #666;padding:3px 5px;vertical-align:top;}
-.log-grid th{background:#dfe8cf;font-weight:700;text-align:center;font-size:10px;}
-.log-grid .col-depth{width:52px;text-align:center;white-space:pre-line;}
-.log-grid .col-sample{width:92px;text-align:center;white-space:pre-line;font-size:10px;}
-.log-grid .col-unit{width:110px;text-align:center;white-space:pre-line;font-weight:600;}
-.log-grid .col-desc{white-space:pre-wrap;min-width:220px;}
-.log-footer{font-family:monospace;font-size:11px;border:1px solid #666;padding:5px 8px;margin-top:4px;}
-.log-titleblock{font-family:monospace;font-size:11px;border:1px solid #000;border-top:none;
-  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;}
-.log-titleblock div{border:1px solid #888;padding:4px 6px;}
-.log-titleblock .ltlabel{font-size:9px;color:#555;display:block;}
-.hidden{display:none!important;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:#dfe5ec;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+button,input{font:inherit}
+#app{max-width:520px;min-height:100vh;margin:0 auto;background:var(--bg)}
+.top{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px}
+.back{width:38px;height:38px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:20px}
+.title{font-size:17px;font-weight:750;line-height:1.1}.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.spacer{flex:1}.gear{border:1px solid var(--line);background:#fff;border-radius:8px;width:38px;height:38px}
+.body{padding:14px 16px 96px}.section{font-size:11px;font-weight:800;color:#8a94a6;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.row{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}.project{cursor:pointer}.project:active{background:#f9fafb}
+.badge{display:inline-flex;align-items:center;border-radius:7px;background:var(--accent-soft);color:var(--accent-dark);padding:4px 9px;font-weight:800;font-size:12px;white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}.badge.warn{background:var(--warn-soft);color:var(--warn)}.badge.err{background:var(--danger-soft);color:var(--danger)}
+.name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:13px;color:var(--muted);margin-top:2px}
+.chev{color:#98a2b3;font-size:22px}.empty{text-align:center;padding:54px 22px;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}.field{margin-bottom:12px}.label{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:5px}
+.input{width:100%;border:1px solid var(--line);background:#fff;border-radius:8px;padding:11px 12px;font-size:15px;color:var(--ink)}
+.btn{width:100%;border:0;border-radius:8px;padding:13px 14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent);color:#fff}.btn.primary:active{background:var(--accent-dark)}
+.btn.ghost{background:#e9edf3;color:var(--ink)}.btn:disabled{opacity:.55}.actions{display:grid;gap:10px;margin-top:12px}
+.status{font-size:13px;border-radius:8px;padding:10px 11px;background:#eef2f6;color:var(--muted);margin-top:10px}
+.status.ok{background:var(--ok-soft);color:var(--ok)}.status.warn{background:var(--warn-soft);color:var(--warn)}.status.err{background:var(--danger-soft);color:var(--danger)}
+.pdfWrap{background:#0f172a;border-radius:8px;overflow:hidden;border:1px solid #101828;margin-top:10px}
+.pdfFrame{display:block;width:100%;height:62vh;border:0;background:#fff}.pdfLink{display:block;color:#fff;text-decoration:none;font-size:13px;padding:10px 12px;background:#111827}
+.kv{display:grid;grid-template-columns:104px 1fr;gap:7px 10px;font-size:13px}.k{color:var(--muted);font-weight:700}.v{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:460px;width:calc(100% - 28px);background:#111827;color:#fff;padding:12px 14px;border-radius:8px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .18s}.toast.show{opacity:1}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div id="app"></div>
-
-<div class="overlay" id="addProjectOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head"><h3>Add Project</h3><button class="btn-close" onclick="closeAddProject()">✕</button></div>
-    <div style="padding:0 16px;">
-      <input class="search-box" id="projectSearch" placeholder="Project # or address…" oninput="filterProjects()">
-      <div id="projectList"></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="confirmProjectOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head"><h3>Confirm Project</h3></div>
-    <div style="padding:0 16px 10px;" id="confirmProjectBody"></div>
-  </div>
-</div>
-
-<div id="logOverlay">
-  <div class="log-wrap">
-    <div class="log-topbar"><h2 id="logTitle">LA Soil Reports — Log</h2>
-      <button class="btn btn-ghost btn-sm" onclick="closeLog()">✕ Close</button></div>
-    <div id="logBody"></div>
-  </div>
-</div>
-
-<div id="saveBar">Saved ✓</div>
-
+<div id="toast" class="toast"></div>
 <script>
-// ════════════ PICKLISTS (from V2 08_Field_Picklists) ════════════
-const PICK = {
-  pointType:["Test Pit","Hand Auger","Observation Point"],
-  layerType:["Fill","Native Soil","Bedrock"],
-  moisture:["Dry","Slightly Moist","Moist","Very Moist","Wet"],
-  density:["Loose","Medium Dense","Moderately compact","Dense","Very Dense",
-           "Loose to moderately compact","Dense to very dense",
-           "Very Soft","Soft","Firm","Stiff","Very Stiff","Hard"],
-  weathering:["Slightly weathered","Moderately weathered","Highly weathered","Fresh"],
-  bedding:["Massive","Bedded","Fractured"],
-  contact:["Sharp","Gradational","Irregular"],
-  groundwater:["Not Encountered","Seepage","Groundwater Encountered"],
-  caving:["No caving","Minor caving","Moderate caving","Severe caving"],
-  backfilled:["Yes","No","Backfilled"],
-  accuracy:["GPS measured","Approximate"],
-  sampleType:["Ring","MC","Shelby","Bag","Chunk","Grab"],
-  color:["Brown","Tan","Gray","Reddish-brown","Olive","Dark brown"],
-};
+const CFG_KEY="geoted_field_app_bridge_v1";
+const POLL_MS=5000;
+const state={view:"home",projects:[],project:null,status:null,loading:false,message:"",poll:null};
 
-// USCS codes for soil (Fill / Native Soil only). From V2 09_USCS_Lookup.
-const USCS_CODES = ["SM","SC","CL","ML","GP","GM","SP","GC","CH","MH","SW","GW","CL-ML"];
-const USCS_DESC = {
-  "SM":"Silty sand; fine to medium sand with silt; slightly plastic to non-plastic.",
-  "SC":"Clayey sand; fine to medium sand with clay; low to medium plasticity.",
-  "CL":"Lean clay; silty clay to clay; low to medium plasticity.",
-  "ML":"Silt; sandy silt to clayey silt; non-plastic to slightly plastic.",
-  "GP":"Poorly graded gravel; gravel with sand; non-plastic.",
-  "GM":"Silty gravel; gravel with sand and silt; non-plastic.",
-  "SP":"Poorly graded sand; clean sand; non-plastic.",
-  "GC":"Clayey gravel; gravel with sand and clay; low plasticity.",
-  "CH":"Fat clay; high plasticity clay.",
-  "MH":"Elastic silt; high plasticity silt.",
-  "SW":"Well-graded sand; clean sand; non-plastic.",
-  "GW":"Well-graded gravel; clean gravel with sand; non-plastic.",
-  "CL-ML":"Silty clay; low plasticity; clay-silt transitional.",
-};
+function getCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||"{}")}catch(e){return {}}}
+function setCfg(cfg){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2600)}
+function stopPoll(){if(state.poll){clearInterval(state.poll);state.poll=null}}
 
-// Geologic units, grouped by layer type. From V2 10_Geologic_Unit_Lookup.
-const GEO_UNITS = {
-  "Fill":["Af — Artificial fill","Cf — Compacted fill"],
-  "Native Soil":["Qa — Alluvium","Qc — Colluvium","Qoa — Older alluvium"],
-  "Bedrock":["qd — Quartz Diorite","sms — Santa Monica Slate",
-             "Tush — Unnamed Shale, claystone/siltstone","Tuss — Unnamed Shale, sandstone facies",
-             "Tm — Monterey Formation / Monterey Shale","Tmss — Monterey Formation sandstone",
-             "Qoa — Older alluvium","QTs — Saugus Formation","Tps — Pico Formation sandstone",
-             "Tsr — Saugus Formation, Sunshine Ranch Member","Ttus — Upper Topanga Formation sandstone",
-             "Ttucg — Upper Topanga conglomerate","Tcvb — Conejo Volcanics basaltic flows and breccias",
-             "Tcva — Conejo Volcanics andesitic flows and breccias","Tvb — Volcanic rocks",
-             "Kcs — Chatsworth sandstone","Kcsh — Chatsworth shale/siltstone",
-             "Kcg — Chatsworth conglomerate","Tsus — Santa Susana sandstone"],
-};
-
-// Bedrock geologic unit -> auto-fill FIELD LOG description (verified, from Dibblee lookup 20260514). Keyed by unit code prefix.
-const GEO_UNIT_DESC = {
-  "qd":"Quartz diorite, gray to light gray, medium grained, granitic, massive to locally vaguely gneissic, fractured and deeply weathered where exposed.",
-  "sms":"Santa Monica Slate, dark bluish gray slate-phyllite, weathering brown, fine grained, platy, fractured to locally sheared, with cleavage generally parallel to bedding.",
-  "Tush":"Light gray claystone and siltstone, moderately to vaguely bedded, crumbly where weathered.",
-  "Tuss":"Light gray sandstone, soft, friable, fine to medium grained.",
-  "Tm":"Monterey Formation shale/siltstone, thin bedded, locally siliceous, porcelaneous, or cherty, weathering variable from cream white to gray-brown.",
-  "Tmss":"Light gray to tan semi-friable sandstone, fine to medium grained, locally interbedded with siltstone and shale.",
-  "Qoa":"Older alluvial gravel, sand, and silt/clay, weakly consolidated and dissected where elevated.",
-  "QTs":"Weakly consolidated light gray pebble-cobble conglomerate and sandstone with minor claystone/siltstone.",
-  "Tps":"Light gray to nearly white, semi-friable sandstone, medium to coarse grained, locally pebbly and cross-bedded.",
-  "Tsr":"Light reddish to greenish claystone and sandstone with interbedded pebble-cobble conglomerate.",
-  "Ttus":"Light gray to tan, thick-bedded, semi-friable to coherent sandstone, locally pebbly.",
-  "Ttucg":"Pebble-cobble conglomerate of granitic and metavolcanic detritus in sandy matrix.",
-  "Tcvb":"Black to dark olive-brown basaltic flows and breccias, fine grained, locally amygdaloidal, altered and fractured.",
-  "Tcva":"Gray to maroon-gray and brown andesitic to basaltic flows and breccias, massive to vaguely stratified, fractured.",
-  "Tvb":"Dark brown to black basaltic to mafic andesitic volcanic rocks, locally flows and breccias.",
-  "Kcs":"Light gray to light brown, hard, thick-bedded sandstone, locally gritty, with minor micaceous siltstone and shale layers.",
-  "Kcsh":"Gray micaceous shale and siltstone, locally including sandstone strata.",
-  "Kcg":"Gray to brown crudely bedded cobble conglomerate of granitic, metavolcanic, and quartzite detritus in hard sandstone matrix.",
-  "Tsus":"Tan to light brown bedded coherent sandstone; forms local lenses in Santa Susana Formation."
-};
-
-// Bedrock types -> description + weathering + structure. From V2 11_Bedrock_Lookup.
-const BEDROCK_TYPES = {
-  "Sandstone and shale":{
-    desc:"Sandstone and shale bedrock, tan to brown, moist, dense to very dense, moderately weathered, and bedded.",
-    weathering:["Slightly weathered","Moderately weathered","Highly weathered"],
-    structure:["Massive","Bedded","Fractured"]},
-  "Sandstone":{
-    desc:"Sandstone bedrock, tan to brown, dense to very dense, moderately weathered.",
-    weathering:["Slightly weathered","Moderately weathered","Highly weathered"],
-    structure:["Massive","Bedded","Fractured"]},
-  "Shale":{
-    desc:"Shale bedrock, tan to dark brown, thinly bedded, weathered near surface.",
-    weathering:["Slightly weathered","Moderately weathered","Highly weathered"],
-    structure:["Bedded","Fractured"]},
-};
-
-// Projects (from V2 01_Project_Setup)
-const ALL_PROJECTS = [
-  {id:"26-02",address:"16215 Dorilee Ln",city:"Encino",state:"CA",zip:"91436",
-   lat:"34.1329484",lng:"-118.485788",region:"M",defaultBedrock:"Sandstone and shale"},
-];
-
-// ════════════ STATE ════════════
-let state = {activeProjects:[], points:{}};
-function loadState(){try{const s=localStorage.getItem("geoted_fieldlog_v3");if(s)state=JSON.parse(s);}catch(e){}}
-function saveState(){
-  localStorage.setItem("geoted_fieldlog_v3",JSON.stringify(state));
-  const bar=document.getElementById("saveBar");bar.classList.add("show");
-  clearTimeout(bar._t);bar._t=setTimeout(()=>bar.classList.remove("show"),1600);
+function bridge(action,payload={}){
+  const cfg=getCfg();
+  if(!cfg.url) return Promise.reject(new Error("Web App URL is not set."));
+  const body={action,...payload};
+  if(cfg.token) body.token=cfg.token;
+  const cb="__gtcb_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+  const url=cfg.url+(cfg.url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&payload="+encodeURIComponent(JSON.stringify(body));
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>{cleanup();reject(new Error("Web App request timed out."))},30000);
+    function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}
+    window[cb]=(res)=>{cleanup();res&&res.ok?resolve(res.result):reject(new Error(res&&res.error?res.error:"Web App error"))};
+    script.onerror=()=>{cleanup();reject(new Error("Could not reach Web App."))};
+    script.src=url;
+    document.body.appendChild(script);
+  });
 }
 
-// ════════════ ROUTER ════════════
-let route={screen:"projects",projectId:null,pointId:null,mode:null};
-function go(screen,projectId,pointId,mode){route={screen,projectId:projectId||null,pointId:pointId||null,mode:mode||null};render();window.scrollTo(0,0);}
+function pdfEmbedUrl(url){
+  if(!url) return "";
+  const m=String(url).match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  return m?`https://drive.google.com/file/d/${m[1]}/preview`:url;
+}
+
 function render(){
   const app=document.getElementById("app");
-  const map={projects:renderProjects,points:renderPoints,addPoint:renderAddPoint,
-    pointDetail:renderPointDetail,addLayer:renderAddLayer,addSample:renderAddSample};
-  app.innerHTML=(map[route.screen]||renderProjects)();
+  if(state.view==="settings") return renderSettings(app);
+  if(state.view==="project") return renderProject(app);
+  return renderHome(app);
 }
 
-// ════════════ PROJECTS ════════════
-function renderProjects(){
-  const projs=state.activeProjects;
-  const cards=projs.length===0
-    ? `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No active projects</div><div class="empty-sub">Tap ＋ to add a project</div></div>`
-    : projs.map(p=>{const n=(state.points[p.id]||[]).length;
-        return `<div class="card"><div class="card-row">
-          <span class="badge">${p.id}</span><div style="flex:1;" onclick="go('points','${p.id}')"><div class="card-title">${p.address}</div>
-          <div class="card-sub">${p.city}, ${p.state} ${p.zip} · ${n} point${n!==1?"s":""}</div></div>
-          <button class="btn-remove" onclick="event.stopPropagation();removeProject('${p.id}')">✕</button>
-          <span class="chevron" onclick="go('points','${p.id}')">›</span></div></div>`;}).join("");
-  return `<div class="hdr"><div class="hdr-title">LA Soil Reports</div>
-    <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">${cards}</div>`;
-}
-function openAddProject(){document.getElementById("addProjectOverlay").classList.add("show");
-  document.getElementById("projectSearch").value="";filterProjects();
-  setTimeout(()=>document.getElementById("projectSearch").focus(),200);}
-function closeAddProject(){document.getElementById("addProjectOverlay").classList.remove("show");}
-function filterProjects(){
-  const q=document.getElementById("projectSearch").value.toLowerCase();
-  const active=state.activeProjects.map(p=>p.id);
-  const fil=ALL_PROJECTS.filter(p=>!active.includes(p.id)&&
-    (p.id.toLowerCase().includes(q)||p.address.toLowerCase().includes(q)||p.city.toLowerCase().includes(q)));
-  document.getElementById("projectList").innerHTML=fil.length===0
-    ?`<div style="color:var(--hint);text-align:center;padding:20px;font-size:14px;">No matches</div>`
-    :fil.map(p=>`<div class="card"><div class="card-row" onclick="confirmProject('${p.id}')">
-       <span class="badge">${p.id}</span><div><div class="card-title">${p.address}</div>
-       <div class="card-sub">${p.city}, ${p.state}</div></div><span class="chevron">›</span></div></div>`).join("");
-}
-function confirmProject(id){
-  const p=ALL_PROJECTS.find(x=>x.id===id);closeAddProject();
-  document.getElementById("confirmProjectBody").innerHTML=`
-    <div class="card" style="margin-bottom:16px;"><span class="badge">${p.id}</span>
-    <div class="card-title" style="font-size:16px;margin-top:8px;">${p.address}</div>
-    <div class="card-sub">${p.city}, ${p.state} ${p.zip}</div></div>
-    <div class="btn-row"><button class="btn btn-ghost" onclick="closeConfirm()">← Change</button>
-    <button class="btn btn-primary" onclick="addProject('${p.id}')">Add to Active</button></div>`;
-  document.getElementById("confirmProjectOverlay").classList.add("show");
-}
-function closeConfirm(){document.getElementById("confirmProjectOverlay").classList.remove("show");}
-function addProject(id){const p=ALL_PROJECTS.find(x=>x.id===id);state.activeProjects.push(p);
-  if(!state.points[id])state.points[id]=[];saveState();closeConfirm();render();}
-function removeProject(id){
-  const n=(state.points[id]||[]).length;
-  const msg=n>0
-    ?`Remove project ${id} from the app? This deletes its ${n} logged point${n!==1?"s":""} from this device. (The project can be re-added later, but the field data here will be gone.)`
-    :`Remove project ${id} from the app?`;
-  if(!confirm(msg))return;
-  state.activeProjects=state.activeProjects.filter(p=>p.id!==id);
-  delete state.points[id];
-  saveState();render();
+function shell(title,sub,body,back=false){
+  return `<div class="top">${back?`<button class="back" onclick="goHome()">&lt;</button>`:""}<div><div class="title">${esc(title)}</div><div class="sub">${esc(sub||"")}</div></div><div class="spacer"></div><button class="gear" onclick="openSettings()">Set</button></div><div class="body">${body}</div>`;
 }
 
-// ════════════ POINTS ════════════
-function getProject(id){return state.activeProjects.find(p=>p.id===id)||ALL_PROJECTS.find(p=>p.id===id)||{id,address:"",city:"",state:""};}
-function renderPoints(){
-  const p=getProject(route.projectId);const pts=state.points[p.id]||[];
-  const cards=pts.length===0
-    ?`<div class="empty"><div class="empty-icon">📍</div><div class="empty-title">No field points yet</div><div class="empty-sub">Tap ＋ to log a test pit or hand auger</div></div>`
-    :pts.map(pt=>`<div class="card"><div class="card-row" onclick="go('pointDetail','${p.id}','${pt.id}')">
-       <span class="badge ${pt.type==="Test Pit"?"":"ok"}">${pt.pointId||"—"}</span>
-       <div><div class="card-title">${pt.type}</div>
-       <div class="card-sub">${pt.layers.length} layer${pt.layers.length!==1?"s":""} · ${pt.samples.length} sample${pt.samples.length!==1?"s":""} · ${pt.date||"no date"}</div></div>
-       <span class="chevron">›</span></div></div>`).join("");
-  return `<div class="hdr"><button class="btn-back" onclick="go('projects')">‹</button>
-    <div><div class="hdr-title">${p.id}</div><div class="hdr-sub">${p.address}, ${p.city}</div></div>
-    <button class="btn-icon" onclick="go('addPoint','${p.id}')">＋</button></div><div class="body">${cards}</div>`;
+function renderHome(app){
+  const cfg=getCfg();
+  let body="";
+  if(!cfg.url) body+=setupCard();
+  body+=`<div class="section">Active Projects</div>`;
+  if(state.loading) body+=`<div class="empty"><strong>Loading projects</strong>Reading the field workbook...</div>`;
+  else if(!state.projects.length) body+=`<div class="empty"><strong>No projects loaded</strong><button class="btn primary" onclick="loadProjects()">Load Projects</button></div>`;
+  else body+=state.projects.map(p=>`
+    <div class="card project" onclick="openProject('${esc(p.projectNumber)}')">
+      <div class="row"><span class="badge">${esc(p.projectNumber)}</span><div class="grow"><div class="name">${esc(p.address)}</div><div class="meta">${esc(p.city)}</div></div><div class="chev">&gt;</div></div>
+    </div>`).join("");
+  app.innerHTML=shell("LA Soil Reports","Figure pipeline",body);
 }
 
-// ════════════ ADD POINT ════════════
-function nextPointId(projectId,type){
-  const prefix=type==="Test Pit"?"TP":type==="Hand Auger"?"HA":"OP";
-  const pts=state.points[projectId]||[];
-  let max=0;
-  pts.forEach(pt=>{const m=(pt.pointId||"").match(new RegExp("^"+prefix+"-?(\\d+)$","i"));if(m)max=Math.max(max,parseInt(m[1]));});
-  return `${prefix}-${max+1}`;
-}
-function renderAddPoint(){
-  const p=getProject(route.projectId);
-  const editing=route.mode==="edit"?(state.points[p.id]||[]).find(x=>x.id===route.pointId):null;
-  const d=editing||{id:uid(),pointId:"",type:"Test Pit",date:today(),loggedBy:"TZ, CEG",
-    lat:"",lng:"",accuracy:"GPS measured",totalDepth:"",
-    groundwater:"Not Encountered",caving:"No caving",backfilled:"Yes",notes:""};
-  if(!editing && !d.pointId) d.pointId=nextPointId(p.id,d.type);
-
-  return `<div class="hdr"><button class="btn-back" onclick="go('${editing?'pointDetail':'points'}','${p.id}','${editing?editing.id:''}')">‹</button>
-    <div><div class="hdr-title">${editing?"Edit Point":"New Point"}</div><div class="hdr-sub">${p.id}</div></div></div>
-  <div class="body">
-    <div class="sec">IDENTIFICATION</div>
-    <div class="field"><div class="label">Type</div>
-      ${sel("f_type",PICK.pointType,d.type,`onchange="onTypeChange('${p.id}',${!!editing})"`)}</div>
-    <div class="field"><div class="label">Point ID <span style="color:var(--ok);font-weight:400;">(auto)</span></div>
-      <input class="input" id="f_pointId" value="${esc(d.pointId)}" placeholder="TP-1"></div>
-    <div class="row2">
-      <div class="field"><div class="label">Date</div><input class="input" type="date" id="f_date" value="${d.date}"></div>
-      <div class="field"><div class="label">Logged By</div><input class="input" id="f_loggedBy" value="${esc(d.loggedBy)}"></div>
-    </div>
-    <div class="sec">LOCATION</div>
-    <button class="gps-btn" onclick="getGPS()">📍 Use My Location</button>
-    <div id="gpsNote"></div>
-    <div class="row2">
-      <div class="field"><div class="label">Latitude</div><input class="input" id="f_lat" inputmode="decimal" value="${esc(d.lat)}" placeholder="34.13295"></div>
-      <div class="field"><div class="label">Longitude</div><input class="input" id="f_lng" inputmode="decimal" value="${esc(d.lng)}" placeholder="-118.48579"></div>
-    </div>
-    <div class="field"><div class="label">GPS Accuracy</div>${sel("f_accuracy",PICK.accuracy,d.accuracy)}</div>
-    <div class="sec">FIELD CONDITIONS</div>
-    <div class="field"><div class="label">Total Depth (ft)</div><input class="input" id="f_totalDepth" inputmode="decimal" value="${esc(d.totalDepth)}" placeholder="8.5"></div>
-    <div class="row2">
-      <div class="field"><div class="label">Groundwater</div>${sel("f_groundwater",PICK.groundwater,d.groundwater)}</div>
-      <div class="field"><div class="label">Caving</div>${sel("f_caving",PICK.caving,d.caving)}</div>
-    </div>
-    <div class="field"><div class="label">Backfilled</div>${sel("f_backfilled",PICK.backfilled,d.backfilled)}</div>
-    <div class="sec">NOTES</div>
-    <div class="field"><textarea class="textarea" id="f_notes" rows="3" placeholder="Access, equipment, observations…">${esc(d.notes)}</textarea></div>
-    <div class="btn-row">
-      <button class="btn btn-primary btn-full" onclick="savePoint('${p.id}','${d.id}',${!!editing})">Save Point</button>
-      ${editing?`<button class="btn btn-danger btn-full" onclick="deletePoint('${p.id}','${d.id}')">Delete Point</button>`:""}
-    </div>
-  </div>`;
-}
-function onTypeChange(projectId,isEdit){
-  if(isEdit) return; // don't override an existing point's ID
-  const type=document.getElementById("f_type").value;
-  document.getElementById("f_pointId").value=nextPointId(projectId,type);
-}
-function getGPS(){
-  const note=document.getElementById("gpsNote");
-  if(!navigator.geolocation){note.innerHTML='<div class="note-warn">⚠ Geolocation not available on this device.</div>';return;}
-  note.innerHTML='<div class="note-ok">Getting location…</div>';
-  navigator.geolocation.getCurrentPosition(
-    pos=>{document.getElementById("f_lat").value=pos.coords.latitude.toFixed(6);
-      document.getElementById("f_lng").value=pos.coords.longitude.toFixed(6);
-      const acc=Math.round(pos.coords.accuracy);
-      note.innerHTML=`<div class="note-ok">📍 Location captured (±${acc}m)</div>`;
-      document.getElementById("f_accuracy").value="GPS measured";},
-    err=>{note.innerHTML=`<div class="note-warn">⚠ ${err.message}. Enter manually or allow location access.</div>`;},
-    {enableHighAccuracy:true,timeout:10000,maximumAge:0});
-}
-function savePoint(projectId,pointId,isEdit){
-  const pts=state.points[projectId]||[];
-  const existing=isEdit?pts.find(x=>x.id===pointId):null;
-  const np={id:pointId,pointId:v("f_pointId"),type:v("f_type"),date:v("f_date"),loggedBy:v("f_loggedBy"),
-    lat:v("f_lat"),lng:v("f_lng"),accuracy:v("f_accuracy"),totalDepth:v("f_totalDepth"),
-    groundwater:v("f_groundwater"),caving:v("f_caving"),backfilled:v("f_backfilled"),notes:v("f_notes"),
-    layers:existing?existing.layers:[],samples:existing?existing.samples:[]};
-  if(isEdit)state.points[projectId]=pts.map(x=>x.id===pointId?np:x);
-  else state.points[projectId]=[...pts,np];
-  saveState();go("pointDetail",projectId,pointId);
-}
-function deletePoint(projectId,pointId){if(!confirm("Delete this point and all its layers/samples?"))return;
-  state.points[projectId]=(state.points[projectId]||[]).filter(x=>x.id!==pointId);saveState();go("points",projectId);}
-
-// ════════════ POINT DETAIL ════════════
-function renderPointDetail(){
-  const p=getProject(route.projectId);
-  const pt=(state.points[p.id]||[]).find(x=>x.id===route.pointId)||{layers:[],samples:[]};
-  const layerCards=pt.layers.length===0
-    ?`<div style="color:var(--hint);font-size:13px;padding:4px 2px 8px;">No layers yet</div>`
-    :pt.layers.map(l=>`<div class="card" style="cursor:pointer;" onclick="go('addLayer','${p.id}','${pt.id}','edit_${l.id}')">
-       <div class="card-row"><span class="badge">${esc(l.topDepth||"0")}–${esc(l.bottomDepth||"?")}ft</span>
-       <div><div class="card-title">${esc(l.layerType)}${l.layerType==="Bedrock"?(l.bedrockType?" · "+esc(l.bedrockType):""):" · "+esc(l.uscs||"—")}</div>
-       <div class="card-sub" style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.description)||"No description"}</div></div>
-       <span class="chevron">›</span></div></div>`).join("");
-  const sampleCards=pt.samples.length===0
-    ?`<div style="color:var(--hint);font-size:13px;padding:4px 2px 8px;">No samples yet</div>`
-    :pt.samples.map(s=>{const m=matchLayer(pt,s.depth);
-       return `<div class="card" style="cursor:pointer;" onclick="go('addSample','${p.id}','${pt.id}','edit_${s.id}')">
-       <div class="card-row"><span class="badge ok">${esc(s.sampleId||"—")}</span>
-       <div><div class="card-title">${esc(s.type)} @ ${esc(s.depth||"?")}ft</div>
-       <div class="card-sub">${m?esc(m.layerType)+(m.layerType==="Bedrock"?(m.bedrockType?" ("+esc(m.bedrockType)+")":""):(m.uscs?" ("+esc(m.uscs)+")":"")):"<span style='color:var(--warn)'>no layer match</span>"}</div></div>
-       <span class="chevron">›</span></div></div>`;}).join("");
-  return `<div class="hdr"><button class="btn-back" onclick="go('points','${p.id}')">‹</button>
-    <div><div class="hdr-title">${esc(pt.pointId||pt.id)} · ${esc(pt.type)}</div><div class="hdr-sub">${p.id} · ${pt.date||""}</div></div>
-    <button class="btn-edit" onclick="go('addPoint','${p.id}','${pt.id}','edit')">✎</button></div>
-  <div class="body">
-    <div class="card" style="background:#f8f9fb;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
-      <div><div style="font-size:10px;color:var(--hint);font-weight:700;text-transform:uppercase;">Total Depth</div><div style="font-weight:700;font-size:15px;margin-top:2px;">${pt.totalDepth?pt.totalDepth+"ft":"—"}</div></div>
-      <div><div style="font-size:10px;color:var(--hint);font-weight:700;text-transform:uppercase;">Groundwater</div><div style="font-weight:700;font-size:13px;margin-top:2px;">${esc(pt.groundwater||"—")}</div></div>
-      <div><div style="font-size:10px;color:var(--hint);font-weight:700;text-transform:uppercase;">Caving</div><div style="font-weight:700;font-size:13px;margin-top:2px;">${esc(pt.caving||"—")}</div></div>
-    </div></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-      <div class="sec" style="margin:0;">LAYERS (${pt.layers.length})</div>
-      <button class="btn btn-ghost btn-sm" onclick="go('addLayer','${p.id}','${pt.id}')">＋ Layer</button></div>
-    <div style="margin-top:8px;">${layerCards}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-      <div class="sec" style="margin:0;">SAMPLES (${pt.samples.length})</div>
-      <button class="btn btn-ghost btn-sm" onclick="go('addSample','${p.id}','${pt.id}')">＋ Sample</button></div>
-    <div style="margin-top:8px;">${sampleCards}</div>
-    <div class="sec" style="margin-top:24px;">ACTIONS</div>
-    <div class="btn-row">
-      <button class="btn btn-ok btn-sm" onclick="showLog('${p.id}','${pt.id}')">👁 Preview Log</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportCSV('${p.id}','${pt.id}')">⬇ Export CSV</button></div>
-  </div>`;
-}
-
-// ════════════ ADD LAYER ════════════
-function renderAddLayer(){
-  const p=getProject(route.projectId);
-  const pt=(state.points[p.id]||[]).find(x=>x.id===route.pointId)||{layers:[],samples:[]};
-  const editId=route.mode&&route.mode.startsWith("edit_")?route.mode.slice(5):null;
-  const ed=editId?pt.layers.find(l=>l.id===editId):null;
-  const lastBottom=pt.layers.length>0&&!ed?pt.layers[pt.layers.length-1].bottomDepth:"";
-  const d=ed||{id:uid(),layerType:"Fill",topDepth:lastBottom,bottomDepth:"",
-    uscs:"",geoUnit:"",bedrockType:"",description:"",color:"",moisture:"Moist",density:"Medium Dense",
-    weathering:"",bedding:"",contact:"",strike:"",dip:"",dipDir:"",notes:""};
-
-  return `<div class="hdr"><button class="btn-back" onclick="go('pointDetail','${p.id}','${pt.id}')">‹</button>
-    <div><div class="hdr-title">${ed?"Edit Layer":"Add Layer"}</div><div class="hdr-sub">${esc(pt.pointId||pt.id)} · ${p.id}</div></div></div>
-  <div class="body">
-    <div class="sec">LAYER BOUNDS</div>
-    <div class="row2">
-      <div class="field"><div class="label">Top Depth (ft)</div><input class="input" id="f_topDepth" inputmode="decimal" value="${esc(d.topDepth)}" placeholder="0"></div>
-      <div class="field"><div class="label">Bottom Depth (ft)</div><input class="input" id="f_bottomDepth" inputmode="decimal" value="${esc(d.bottomDepth)}" placeholder="3.5"></div>
-    </div>
-    <div class="field"><div class="label">Layer Type</div>
-      ${sel("f_layerType",PICK.layerType,d.layerType,'onchange="onLayerTypeChange()"')}</div>
-
-    <div class="sec">CLASSIFICATION</div>
-    <!-- USCS row: stays visible always; shows N/A for bedrock -->
-    <div class="row2">
-      <div class="field"><div class="label">USCS</div>
-        <div id="uscsWrap">${uscsControl(d)}</div></div>
-      <div class="field"><div class="label">Geologic Unit</div>
-        <div id="geoWrap">${geoControl(d)}</div></div>
-    </div>
-    <!-- Bedrock Type row: only for bedrock -->
-    <div class="field ${d.layerType==="Bedrock"?"":"hidden"}" id="bedrockTypeWrap">
-      <div class="label">Bedrock Type <span style="color:var(--ok);font-weight:400;">(auto-fills below)</span></div>
-      ${sel("f_bedrockType",["—",...Object.keys(BEDROCK_TYPES)],d.bedrockType||"—",'onchange="onBedrockTypeChange()"')}</div>
-
-    <div class="sec">DESCRIPTION</div>
-    <div class="field"><div class="label">Material Description</div>
-      <textarea class="textarea" id="f_description" rows="3" placeholder="Auto-fills — edit freely…">${esc(d.description)}</textarea>
-      <div class="note-ok hidden" id="descNote">⚡ Auto-filled — edit freely</div></div>
-    <div class="field"><div class="label">Color</div>${sel("f_color",["—",...PICK.color],d.color||"—")}</div>
-
-    <div class="sec">FIELD PROPERTIES</div>
-    <div class="row2">
-      <div class="field"><div class="label">Moisture</div>${sel("f_moisture",PICK.moisture,d.moisture)}</div>
-      <div class="field"><div class="label">Density / Consistency</div>${sel("f_density",PICK.density,d.density)}</div>
-    </div>
-    <div class="row2">
-      <div class="field"><div class="label">Weathering</div><div id="weatherWrap">${weatherControl(d)}</div></div>
-      <div class="field"><div class="label">Bedding / Structure</div><div id="bedWrap">${bedControl(d)}</div></div>
-    </div>
-    <div class="field"><div class="label">Lower Contact</div>${sel("f_contact",["—",...PICK.contact],d.contact||"—")}</div>
-
-    <div class="field ${d.layerType==="Bedrock"?"":"hidden"}" id="attitudeWrap">
-      <div class="sec" style="margin-top:6px;">ATTITUDE (BEDROCK)</div>
-      <div class="row2">
-        <div class="field"><div class="label">Strike</div><input class="input" id="f_strike" value="${esc(d.strike)}" placeholder="N40W" autocapitalize="characters" oninput="onStrikeChange()"></div>
-        <div class="field"><div class="label">Dip</div><input class="input" id="f_dip" inputmode="decimal" value="${esc(d.dip)}" placeholder="35"></div>
+function renderProject(app){
+  const p=state.project;
+  if(!p){goHome();return}
+  const status=state.status||p;
+  const busy=["Queued","Running"].includes(status.status);
+  const fig4=status.fig4Link||p.fig4Link||"";
+  const statusClass=status.errorNotes?"err":busy?"warn":status.status==="Preview Ready"?"ok":"";
+  const pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:`<div class="empty"><strong>No site plan yet.</strong>Generate Figure 4 when you need it.</div>`;
+  const body=`
+    <div class="card">
+      <div class="kv">
+        <div class="k">Project</div><div class="v">${esc(p.projectNumber)}</div>
+        <div class="k">Address</div><div class="v">${esc(p.address)}, ${esc(p.city)} ${esc(p.zip||"")}</div>
+        <div class="k">Points</div><div class="v">${esc(p.pointCount||0)}</div>
+        <div class="k">Status</div><div class="v">${esc(status.status||"No generation queued")}</div>
       </div>
-      <div class="field"><div class="label">Dip Direction <span style="color:var(--ok);font-weight:400;">(perp. to strike)</span></div>
-        <div id="dipDirWrap">${dipDirControl(d)}</div></div>
+      <div class="actions">
+        <button class="btn primary" ${busy?"disabled":""} onclick="generateSitePlan()">${busy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
+        <button class="btn ghost" onclick="refreshProject()">Refresh Status</button>
+      </div>
+      ${status.status||status.errorNotes?`<div class="status ${statusClass}">${esc(status.errorNotes||status.status||"")}${status.lastFinished?` - ${esc(status.lastFinished)}`:""}</div>`:""}
     </div>
-
-    <div class="sec">NOTES</div>
-    <div class="field"><textarea class="textarea" id="f_notes" rows="2" placeholder="Roots, cobbles, contact obs…">${esc(d.notes)}</textarea></div>
-    <div class="btn-row">
-      <button class="btn btn-primary btn-full" onclick="saveLayer('${p.id}','${pt.id}','${d.id}',${!!ed})">Save Layer</button>
-      ${ed?`<button class="btn btn-danger btn-full" onclick="deleteLayer('${p.id}','${pt.id}','${d.id}')">Delete Layer</button>`:""}
-    </div>
-  </div>`;
-}
-// sub-controls so we can swap just these on layer-type change
-function uscsControl(d){
-  if(d.layerType==="Bedrock")
-    return `<input class="input" id="f_uscs" value="N/A — bedrock" disabled style="color:var(--hint);">`;
-  return sel("f_uscs",["—",...USCS_CODES],d.uscs||"—",'onchange="onUscsChange()"');
-}
-function geoControl(d){
-  const opts=["—",...(GEO_UNITS[d.layerType]||[])];
-  return sel("f_geoUnit",opts,d.geoUnit||"—",'onchange="onGeoUnitChange()"');
-}
-function weatherControl(d){
-  // bedrock type may constrain weathering; default to full list
-  const opts=["—",...PICK.weathering];
-  return sel("f_weathering",opts,d.weathering||"—");
-}
-function bedControl(d){
-  const opts=["—",...PICK.bedding];
-  return sel("f_bedding",opts,d.bedding||"—");
-}
-// Strike (e.g. "N40W","N20E","E-W","N-S") -> the two QUADRANT dip directions perpendicular to it.
-function strikeToPerpendiculars(strike){
-  if(!strike)return ["NE","SE","SW","NW"]; // fallback: all four quadrants
-  const s=strike.toUpperCase().replace(/\s/g,"");
-  // forms like N40E / N40W / S30E / S15W -> use the quadrant
-  let m=s.match(/^([NS])(\d{1,3})?([EW])$/);
-  if(m){
-    const ns=m[1], deg=m[2]?parseFloat(m[2]):0, ew=m[3];
-    if((ns==="N"&&ew==="E")||(ns==="S"&&ew==="W")){
-      // NE-SW striking plane -> dips to SE or NW
-      if(deg===0)return ["E","W"];
-      if(deg===90)return ["N","S"];
-      return ["SE","NW"];
-    } else {
-      // NW-SE striking plane -> dips to NE or SW
-      if(deg===0)return ["E","W"];
-      if(deg===90)return ["N","S"];
-      return ["NE","SW"];
-    }
-  }
-  if(s==="N-S"||s==="NS"||s==="N")return ["E","W"];
-  if(s==="E-W"||s==="EW"||s==="E")return ["N","S"];
-  return ["NE","SE","SW","NW"];
-}
-function compassDir(deg){
-  const dirs=["N","NE","E","SE","S","SW","W","NW"];
-  return dirs[Math.round(((deg%360)/45))%8];
-}
-function dipDirControl(d){
-  const opts=["—",...strikeToPerpendiculars(d.strike||"")];
-  const uniq=opts.filter((o,i)=>opts.indexOf(o)===i);
-  return sel("f_dipDir",uniq,d.dipDir||"—");
-}
-function onStrikeChange(){
-  const el=document.getElementById("f_strike");
-  el.value=el.value.toUpperCase();
-  const prev=safeVal("f_dipDir");
-  document.getElementById("dipDirWrap").innerHTML=dipDirControl({strike:el.value,dipDir:prev});
-}
-function onLayerTypeChange(){
-  const lt=document.getElementById("f_layerType").value;
-  // current values to preserve
-  const cur={layerType:lt,
-    uscs:safeVal("f_uscs"),geoUnit:safeVal("f_geoUnit"),bedrockType:safeVal("f_bedrockType"),
-    weathering:safeVal("f_weathering"),bedding:safeVal("f_bedding")};
-  // swap USCS control
-  document.getElementById("uscsWrap").innerHTML=uscsControl(cur);
-  // swap geo unit control (different options per type) — reset selection since options change
-  document.getElementById("geoWrap").innerHTML=geoControl({layerType:lt,geoUnit:""});
-  // show/hide bedrock-only sections
-  document.getElementById("bedrockTypeWrap").classList.toggle("hidden",lt!=="Bedrock");
-  document.getElementById("attitudeWrap").classList.toggle("hidden",lt!=="Bedrock");
-}
-function onUscsChange(){
-  const code=safeVal("f_uscs");
-  const desc=USCS_DESC[code];
-  if(desc){const ta=document.getElementById("f_description");
-    if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
-      document.getElementById("descNote").classList.remove("hidden");}}
-}
-function onGeoUnitChange(){
-  // pull the unit code (text before the em-dash), e.g. "Tmss — Topanga..." -> "Tmss"
-  const raw=safeVal("f_geoUnit");
-  const code=raw.split("—")[0].trim();
-  const desc=GEO_UNIT_DESC[code];
-  if(!desc)return;
-  const ta=document.getElementById("f_description");
-  if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=desc;ta.dataset.auto="1";
-    document.getElementById("descNote").classList.remove("hidden");}
-}
-function onBedrockTypeChange(){
-  const bt=safeVal("f_bedrockType");
-  const info=BEDROCK_TYPES[bt];
-  if(!info)return;
-  const ta=document.getElementById("f_description");
-  if(!ta.value.trim()||ta.dataset.auto==="1"){ta.value=info.desc;ta.dataset.auto="1";
-    document.getElementById("descNote").classList.remove("hidden");}
-  // constrain weathering + structure to this bedrock type's options
-  document.getElementById("weatherWrap").innerHTML=sel("f_weathering",["—",...info.weathering],"—");
-  document.getElementById("bedWrap").innerHTML=sel("f_bedding",["—",...info.structure],"—");
-}
-function capToTotalDepth(value,totalDepth,label){
-  const d=parseFloat(value), td=parseFloat(totalDepth);
-  if(!isNaN(d)&&!isNaN(td)&&d>td){
-    alert(`${label} cannot exceed total depth (${td} ft). It was set to ${td} ft.`);
-    return String(td);
-  }
-  return value;
-}
-function saveLayer(projectId,pointId,layerId,isEdit){
-  const lt=v("f_layerType");
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
-  const pt=pts[i];
-  const bottomDepth=capToTotalDepth(v("f_bottomDepth"),pt.totalDepth,"Layer bottom depth");
-  const layer={id:layerId,layerType:lt,topDepth:v("f_topDepth"),bottomDepth:bottomDepth,
-    uscs:lt==="Bedrock"?"":cleanDash(v("f_uscs")),geoUnit:cleanDash(v("f_geoUnit")),
-    bedrockType:lt==="Bedrock"?cleanDash(v("f_bedrockType")):"",
-    description:v("f_description"),color:cleanDash(v("f_color")),moisture:v("f_moisture"),density:v("f_density"),
-    weathering:cleanDash(v("f_weathering")),bedding:cleanDash(v("f_bedding")),contact:cleanDash(v("f_contact")),
-    strike:v("f_strike"),dip:v("f_dip"),dipDir:v("f_dipDir"),notes:v("f_notes")};
-  if(isEdit)pts[i].layers=pts[i].layers.map(l=>l.id===layerId?layer:l);else pts[i].layers.push(layer);
-  saveState();go("pointDetail",projectId,pointId);
-}
-function deleteLayer(projectId,pointId,layerId){if(!confirm("Delete this layer?"))return;
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);
-  pts[i].layers=pts[i].layers.filter(l=>l.id!==layerId);saveState();go("pointDetail",projectId,pointId);}
-
-// ════════════ ADD SAMPLE ════════════
-function matchLayer(pt,depth){
-  const dep=parseFloat(depth);if(isNaN(dep)||!pt.layers)return null;
-  // A depth on a shared boundary belongs to the UPPER layer.
-  // So a layer matches when: depth <= bottom, AND (depth > top, OR this is the surface layer at top=0 with depth=0).
-  return pt.layers.find(l=>{
-    const top=parseFloat(l.topDepth||0), bot=parseFloat(l.bottomDepth||9999);
-    if(dep>bot)return false;
-    if(dep>top)return true;
-    return dep===top&&top===0;
-  })||null;
-}
-function renderAddSample(){
-  const p=getProject(route.projectId);
-  const pt=(state.points[p.id]||[]).find(x=>x.id===route.pointId)||{layers:[],samples:[]};
-  const editId=route.mode&&route.mode.startsWith("edit_")?route.mode.slice(5):null;
-  const ed=editId?pt.samples.find(s=>s.id===editId):null;
-  const d=ed||{id:uid(),depth:"",type:"Ring",blows:"",fieldMoisture:"",fieldDensity:"",
-    blows6in:"",samplingMethod:"",notes:""};
-  const ptId=pt.pointId||pt.id;
-  const m=matchLayer(pt,d.depth);
-
-  return `<div class="hdr"><button class="btn-back" onclick="go('pointDetail','${p.id}','${pt.id}')">‹</button>
-    <div><div class="hdr-title">${ed?"Edit Sample":"Add Sample"}</div><div class="hdr-sub">${esc(ptId)} · ${p.id}</div></div></div>
-  <div class="body">
-    <div class="sec">SAMPLE</div>
-    <div class="field"><div class="label">Depth (ft)</div>
-      <input class="input" id="f_depth" inputmode="decimal" value="${esc(d.depth)}" placeholder="2.5"
-        oninput="onSampleDepth('${p.id}','${pt.id}','${esc(ptId)}')"></div>
-    <div class="field"><div class="label">Sample ID <span style="color:var(--ok);font-weight:400;">(auto)</span></div>
-      <input class="input" id="f_sampleId" value="${esc(d.sampleId||(d.depth?ptId+" @ "+d.depth+"ft":""))}" placeholder="${esc(ptId)} @ 2ft"></div>
-    <div id="matchNote">${m?`<div class="note-ok">⚡ Layer: ${esc(m.layerType)}${m.layerType==="Bedrock"?(m.bedrockType?" — "+esc(m.bedrockType):""):(m.uscs?" — "+esc(m.uscs):"")} (${esc(m.topDepth)}–${esc(m.bottomDepth)}ft)</div>`:""}</div>
-    <div class="field"><div class="label">Type</div>${sel("f_type",PICK.sampleType,d.type)}</div>
-
-    <div class="sec">FIELD MEASUREMENTS</div>
-    <div class="row2">
-      <div class="field"><div class="label">Blows</div><input class="input" id="f_blows" inputmode="numeric" value="${esc(d.blows)}" placeholder="12"></div>
-      <div class="field"><div class="label">Field Moisture (%)</div><input class="input" id="f_fieldMoisture" inputmode="decimal" value="${esc(d.fieldMoisture)}" placeholder="18"></div>
-    </div>
-    <div class="row2">
-      <div class="field"><div class="label">Field Density (pcf)</div><input class="input" id="f_fieldDensity" inputmode="decimal" value="${esc(d.fieldDensity)}" placeholder="105"></div>
-      <div class="field"><div class="label">Blows / 6in</div><input class="input" id="f_blows6in" inputmode="numeric" value="${esc(d.blows6in)}" placeholder="55"></div>
-    </div>
-    <div class="field"><div class="label">Sampling Method</div><input class="input" id="f_samplingMethod" value="${esc(d.samplingMethod)}" placeholder="MC, Ring…"></div>
-
-    <div class="sec">NOTES</div>
-    <div class="field"><textarea class="textarea" id="f_notes" rows="2" placeholder="Condition, lab tests requested…">${esc(d.notes)}</textarea></div>
-    <div class="btn-row">
-      <button class="btn btn-primary btn-full" onclick="saveSample('${p.id}','${pt.id}','${d.id}',${!!ed})">Save Sample</button>
-      ${ed?`<button class="btn btn-danger btn-full" onclick="deleteSample('${p.id}','${pt.id}','${d.id}')">Delete Sample</button>`:""}
-    </div>
-  </div>`;
-}
-function onSampleDepth(projectId,pointId,ptId){
-  const depth=safeVal("f_depth");
-  // auto-build Sample ID: "TP-1 @ 2ft"
-  const idEl=document.getElementById("f_sampleId");
-  if(!idEl.dataset.touched){idEl.value=depth?`${ptId} @ ${depth}ft`:"";}
-  // layer match
-  const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[]};
-  const m=matchLayer(pt,depth);
-  const note=document.getElementById("matchNote");
-  if(!depth){note.innerHTML="";return;}
-  note.innerHTML=m
-    ?`<div class="note-ok">⚡ Layer: ${esc(m.layerType)}${m.layerType==="Bedrock"?(m.bedrockType?" — "+esc(m.bedrockType):""):(m.uscs?" — "+esc(m.uscs):"")} (${esc(m.topDepth)}–${esc(m.bottomDepth)}ft)</div>`
-    :`<div class="note-warn">⚠ No layer covers ${esc(depth)}ft — add the layer first</div>`;
-}
-function saveSample(projectId,pointId,sampleId,isEdit){
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);if(i===-1)return;
-  const pt=pts[i];
-  const depth=capToTotalDepth(v("f_depth"),pt.totalDepth,"Sample depth");
-  const s={id:sampleId,sampleId:v("f_sampleId"),depth:depth,type:v("f_type"),
-    blows:v("f_blows"),fieldMoisture:v("f_fieldMoisture"),fieldDensity:v("f_fieldDensity"),
-    blows6in:v("f_blows6in"),samplingMethod:v("f_samplingMethod"),notes:v("f_notes")};
-  if(isEdit)pts[i].samples=pts[i].samples.map(x=>x.id===sampleId?s:x);else pts[i].samples.push(s);
-  saveState();go("pointDetail",projectId,pointId);
-}
-function deleteSample(projectId,pointId,sampleId){if(!confirm("Delete this sample?"))return;
-  const pts=state.points[projectId];const i=pts.findIndex(x=>x.id===pointId);
-  pts[i].samples=pts[i].samples.filter(x=>x.id!==sampleId);saveState();go("pointDetail",projectId,pointId);}
-
-// ════════════ LOG PREVIEW ════════════
-function showLog(projectId,pointId){
-  const p=getProject(projectId);
-  const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[],samples:[]};
-  document.getElementById("logTitle").textContent=`LA Soil Reports — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
-  let rows="";
-  pt.layers.forEach(l=>{
-    const ls=pt.samples.filter(s=>{const d=parseFloat(s.depth||99);const top=parseFloat(l.topDepth||0),bot=parseFloat(l.bottomDepth||99);if(isNaN(d)||d>bot)return false;if(d>top)return true;return d===top&&top===0;});
-    const att=l.strike&&l.dip?`${l.strike}/${l.dip}${l.dipDir?" "+l.dipDir:""}`:"";
-    const mat=l.layerType==="Bedrock"?(l.bedrockType||"Bedrock"):(l.uscs||"");
-    const unit=`${l.layerType}\n${l.geoUnit||""}\n${mat}\n${att}`;
-    const desc=l.description+(l.color?`\n${l.color}`:"")+(l.moisture?`\n${l.moisture}`:"")+(l.density?`, ${l.density}`:"")+(l.weathering?`\n${l.weathering}`:"")+(l.notes?`\n${l.notes}`:"");
-    const samp=ls.map(s=>{
-      const lines=[];
-      if(s.depth) lines.push(`${s.depth}ft`);
-      if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
-      if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
-      if(s.blows) lines.push(`${s.blows} bl`);
-      return lines.join("\n");
-    }).filter(Boolean).join("\n---\n");
-    rows+=`<tr><td class="col-depth">${esc(l.topDepth||"0")}\n—\n${esc(l.bottomDepth||"?")}</td>
-      <td class="col-sample">${esc(samp)}</td><td class="col-unit">${esc(unit)}</td><td class="col-desc">${esc(desc)}</td></tr>`;
-  });
-  if(pt.layers.length===0)rows=`<tr><td colspan="4" style="text-align:center;color:#999;padding:20px;">No layers logged yet</td></tr>`;
-  const foot=`END OF ${(pt.type||"TEST PIT").toUpperCase()} — Total Depth: ${pt.totalDepth||"—"} ft. Groundwater: ${pt.groundwater||"—"}. Caving: ${pt.caving||"—"}. Backfilled: ${pt.backfilled||"—"}.`;
-  document.getElementById("logBody").innerHTML=`
-    <table class="log-grid"><thead><tr>
-      <th class="col-depth">DEPTH (ft)</th><th class="col-sample">SAMPLE / LAB</th>
-      <th class="col-unit">LAYER / UNIT</th><th class="col-desc">DESCRIPTION (USCS)</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <div class="log-footer">${esc(foot)}</div>
-    <div class="log-titleblock">
-      <div><span class="ltlabel">ADDRESS</span>${esc(p.address+", "+p.city+", "+p.state)}</div>
-      <div><span class="ltlabel">DATE LOGGED</span>${esc(pt.date||"—")}</div>
-      <div><span class="ltlabel">PROJECT No.</span>${esc(p.id)}</div>
-      <div><span class="ltlabel">LOGGED BY</span>${esc(pt.loggedBy||"—")}</div></div>`;
-  document.getElementById("logOverlay").classList.add("show");
-}
-function closeLog(){document.getElementById("logOverlay").classList.remove("show");}
-
-// ════════════ CSV EXPORT (V2-shaped) ════════════
-function exportCSV(projectId,pointId){
-  const p=getProject(projectId);
-  const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[],samples:[]};
-  const fp_h="Project Number,Point ID,Point Type,Latitude,Longitude,Location Accuracy,Date Logged,Logged By,Total Depth ft,Groundwater,Caving,Backfilled,Point Key";
-  const fp_r=[p.id,pt.pointId,pt.type,pt.lat,pt.lng,pt.accuracy,pt.date,pt.loggedBy,pt.totalDepth,pt.groundwater,pt.caving,pt.backfilled,`${p.id}|${pt.pointId}`].map(cc).join(",");
-  dl(`out_02_FieldPoints_${pt.pointId||pt.id}.csv`,fp_h+"\n"+fp_r);
-  const tl_h="Layer App Key,Project Number,Point ID,Layer Number,Layer Type,Top Depth ft,Bottom Depth ft,USCS,Geologic Unit,Bedrock Type,Material Description,Color,Moisture Condition,Density / Consistency,Weathering,Bedding / Structure,Bedding Strike,Bedding Dip,Dip Direction,Contact Type,Field Notes,Point Key,Layer Key";
-  const tl_r=pt.layers.map((l,i)=>[`${p.id}_${pt.pointId}_L${i+1}`,p.id,pt.pointId,i+1,l.layerType,l.topDepth,l.bottomDepth,l.uscs,l.geoUnit,l.bedrockType,l.description,l.color,l.moisture,l.density,l.weathering,l.bedding,l.strike,l.dip,l.dipDir,l.contact,l.notes,`${p.id}|${pt.pointId}`,`${p.id}|${pt.pointId}|${i+1}`].map(cc).join(",")).join("\n");
-  dl(`out_03_TestPitLayers_${pt.pointId||pt.id}.csv`,tl_h+"\n"+tl_r);
-  const fs_h="Sample App Key,Project Number,Point ID,Sample ID,Sample Depth ft,Sample Type,Matched Layer,Matched Material,Blows,Field Moisture Estimate,Field Density Estimate,Blows per 6 inches,Sampling Method,Sample Notes,Point Key,Sample Key";
-  const fs_r=pt.samples.map((s,i)=>{const m=matchLayer(pt,s.depth);
-    const mat=m?(m.layerType==="Bedrock"?(m.bedrockType||"Bedrock"):m.uscs):"";
-    return [`${p.id}_${pt.pointId}_S${i+1}`,p.id,pt.pointId,s.sampleId,s.depth,s.type,m?m.layerType:"",mat,s.blows,s.fieldMoisture,s.fieldDensity,s.blows6in,s.samplingMethod,s.notes,`${p.id}|${pt.pointId}`,`${p.id}|${pt.pointId}|${i+1}`].map(cc).join(",");}).join("\n");
-  dl(`out_04_FieldSamples_${pt.pointId||pt.id}.csv`,fs_h+"\n"+fs_r);
+    <div class="section">Figure 4</div>${pdf}`;
+  app.innerHTML=shell(p.projectNumber,p.address,body,true);
 }
 
-// ════════════ UTILS ════════════
-function uid(){return Math.random().toString(36).slice(2,9);}
-function today(){return new Date().toISOString().slice(0,10);}
-function v(id){const el=document.getElementById(id);return el?el.value.trim():"";}
-function safeVal(id){const el=document.getElementById(id);return el?el.value:"";}
-function cleanDash(s){return s==="—"?"":s;}
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function cc(x){const s=String(x==null?"":x);return s.includes(",")||s.includes('"')||s.includes("\n")?`"${s.replace(/"/g,'""')}"`:s;}
-function sel(id,opts,selected,extra=""){return `<select class="select" id="${id}" ${extra}>${opts.map(o=>`<option value="${esc(o)}"${o===selected?" selected":""}>${esc(o)}</option>`).join("")}</select>`;}
-function dl(fn,c){const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(c);a.download=fn;a.click();}
+function renderSettings(app){
+  const cfg=getCfg();
+  app.innerHTML=shell("Settings","Web App bridge",`
+    ${setupCard()}
+    <div class="card">
+      <div class="field"><div class="label">Web App URL</div><input id="webUrl" class="input" value="${esc(cfg.url||"")}" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      <div class="field"><div class="label">Shared token (optional)</div><input id="webToken" class="input" value="${esc(cfg.token||"")}" placeholder="Only if configured in Apps Script"></div>
+      <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+    </div>`,true);
+}
 
-// track if user manually edited Sample ID
-document.addEventListener("input",e=>{if(e.target&&e.target.id==="f_sampleId")e.target.dataset.touched="1";
-  if(e.target&&e.target.id==="f_description")e.target.dataset.auto="0";});
+function setupCard(){
+  return `<div class="card"><div class="name">Connect the Web App</div><div class="meta">Paste the deployed Apps Script Web App URL once. It stays on this phone.</div><div class="actions"><button class="btn ghost" onclick="openSettings()">Open Settings</button></div></div>`;
+}
 
-loadState();render();
+async function loadProjects(){
+  state.loading=true;render();
+  try{state.projects=await bridge("listProjects");}
+  catch(e){toast(e.message)}
+  finally{state.loading=false;render()}
+}
+async function openProject(projectNumber){
+  stopPoll();state.view="project";state.project={projectNumber,address:"Loading..."};state.status=null;render();
+  try{state.project=await bridge("getProject",{projectNumber});state.status=state.project;}
+  catch(e){toast(e.message);goHome();return}
+  render();
+}
+async function refreshProject(){if(state.project) await openProject(state.project.projectNumber)}
+async function generateSitePlan(){
+  if(!state.project)return;
+  try{
+    state.status={status:"Queued"};render();
+    await bridge("generateSitePlan",{projectNumber:state.project.projectNumber});
+    startPolling(state.project.projectNumber);
+  }catch(e){toast(e.message);await refreshProject()}
+}
+function startPolling(projectNumber){
+  stopPoll();
+  state.poll=setInterval(async()=>{
+    try{
+      const s=await bridge("getStatus",{projectNumber});
+      state.status=s;render();
+      if(!["Queued","Running",""].includes(s.status)||s.errorNotes) stopPoll();
+    }catch(e){toast(e.message);stopPoll()}
+  },POLL_MS);
+}
+function goHome(){stopPoll();state.view="home";state.project=null;state.status=null;render()}
+function openSettings(){stopPoll();state.view="settings";render()}
+function saveSettings(){
+  setCfg({url:document.getElementById("webUrl").value.trim(),token:document.getElementById("webToken").value.trim()});
+  toast("Settings saved");goHome();loadProjects();
+}
+
+window.addEventListener("load",()=>{render();if(getCfg().url)loadProjects()});
 </script>
 </body>
 </html>

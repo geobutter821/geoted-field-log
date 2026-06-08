@@ -1,0 +1,17 @@
+{
+  "name": "LA Soil Reports",
+  "short_name": "Soil Reports",
+  "start_url": "./field_log_app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#f7f8fb",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

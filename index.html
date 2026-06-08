@@ -134,7 +134,7 @@ function renderHome(app){
   if(state.loading) body+=`<div class="empty"><strong>Loading projects...</strong></div>`;
   else if(!state.projects.length) body+=`<div class="empty"><strong>No projects loaded</strong><button class="btn primary" style="margin-top:14px" onclick="loadProjects()">Load Projects</button></div>`;
   else body+=state.projects.map(p=>`
-    <div class="card project" onclick="openProject(${JSON.stringify(p.folderId)},${JSON.stringify(p.projectNumber)},${JSON.stringify(p.name)})">
+    <div class="card project" data-fid="${esc(p.folderId)}" data-pnum="${esc(p.projectNumber)}" data-pname="${esc(p.name)}" onclick="openProjectFromEl(this)">
       <div class="row"><span class="badge">${esc(p.projectNumber||"—")}</span><div class="grow"><div class="name">${esc(p.name)}</div></div><div class="chev">&gt;</div></div>
     </div>`).join("");
   app.innerHTML=shell("LA Soil Reports","Active projects",body,null);
@@ -149,7 +149,7 @@ function renderProject(app){
   else body=`<div class="folder-grid">${state.subfolders.map(f=>{
     const norm=normalizeFolder(f.name);
     const hasTool=FOLDER_HAS_TOOL[norm]||false;
-    return `<div class="folder-tile" onclick="openFolder(${JSON.stringify(f.folderId)},${JSON.stringify(f.name)},${JSON.stringify(f.folderUrl||'')})">
+    return `<div class="folder-tile" data-fid="${esc(f.folderId)}" data-fname="${esc(f.name)}" data-furl="${esc(f.folderUrl||'')}" onclick="openFolderFromEl(this)">
       <div class="folder-icon">${folderIcon(f.name)}</div>
       <div class="folder-tile-name">${esc(f.name)}</div>
       <div class="folder-tile-meta"><span>${f.fileCount} file${f.fileCount===1?"":"s"}</span>${hasTool?`<span class="folder-tool-chip">tool</span>`:""}</div>
@@ -216,6 +216,9 @@ function renderSettings(app){
 function setupCard(){
   return `<div class="card"><div class="name">Connect the Web App</div><div class="meta">Paste the deployed Apps Script Web App URL once. It stays on this phone.</div><div class="actions"><button class="btn ghost" onclick="openSettings()">Open Settings</button></div></div>`;
 }
+
+function openProjectFromEl(el){openProject(el.dataset.fid,el.dataset.pnum,el.dataset.pname)}
+function openFolderFromEl(el){openFolder(el.dataset.fid,el.dataset.fname,el.dataset.furl)}
 
 async function loadProjects(){
   state.loading=true;render();

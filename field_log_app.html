@@ -53,13 +53,14 @@ button,input{font:inherit}
 const CFG_KEY="geoted_field_app_bridge_v1";
 const DEFAULT_WEB_APP_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6LDKgtBj9JFwLME9ShnOBjG4tINc8Em7XuHfHjIQvRLVtmUUNzZ1RccaEg/exec";
 const POLL_MS=5000;
-const state={view:"home",projects:[],project:null,status:null,loading:false,message:"",poll:null};
+const state={view:"home",projects:[],project:null,status:null,loading:false,message:"",poll:null,lastStatusKey:""};
 
 function getCfg(){try{const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}");if(!cfg.url)cfg.url=DEFAULT_WEB_APP_URL;return cfg}catch(e){return {url:DEFAULT_WEB_APP_URL}}}
 function setCfg(cfg){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2600)}
 function stopPoll(){if(state.poll){clearInterval(state.poll);state.poll=null}}
+function statusKey(s){return JSON.stringify({status:s&&s.status||"",fig4:s&&s.fig4Link||"",fig5:s&&s.fig5Link||"",finished:s&&s.lastFinished||"",err:s&&s.errorNotes||""})}
 
 function bridge(action,payload={}){
   const cfg=getCfg();
@@ -163,9 +164,10 @@ async function loadProjects(){
   finally{state.loading=false;render()}
 }
 async function openProject(projectNumber){
-  stopPoll();state.view="project";state.project={projectNumber,address:"Loading..."};state.status=null;render();
+  stopPoll();state.view="project";state.project={projectNumber,address:"Loading..."};state.status=null;state.lastStatusKey="";render();
   try{state.project=await bridge("getProject",{projectNumber});state.status=state.project;}
   catch(e){toast(e.message);goHome();return}
+  state.lastStatusKey=statusKey(state.status);
   render();
 }
 async function refreshProject(){if(state.project) await openProject(state.project.projectNumber)}
@@ -192,7 +194,8 @@ function startPolling(projectNumber){
   state.poll=setInterval(async()=>{
     try{
       const s=await bridge("getStatus",{projectNumber});
-      state.status=s;render();
+      const key=statusKey(s);
+      if(key!==state.lastStatusKey){state.status=s;state.lastStatusKey=key;render();}
       if(!["Queued","Running",""].includes(s.status)||s.errorNotes) stopPoll();
     }catch(e){toast(e.message);stopPoll()}
   },POLL_MS);

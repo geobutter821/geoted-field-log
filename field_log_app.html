@@ -115,8 +115,10 @@ function renderProject(app){
   const status=state.status||p;
   const busy=["Queued","Running"].includes(status.status);
   const fig4=status.fig4Link||p.fig4Link||"";
+  const fig5=status.fig5Link||p.fig5Link||"";
   const statusClass=status.errorNotes?"err":busy?"warn":status.status==="Preview Ready"?"ok":"";
-  const pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:`<div class="empty"><strong>No site plan yet.</strong>Generate Figure 4 when you need it.</div>`;
+  const fig4Pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:`<div class="empty"><strong>No site plan yet.</strong>Generate Figure 4 when you need it.</div>`;
+  const fig5Pdf=fig5?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig5))}" title="Figure 5 Cross-Section"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig5)}">Open Figure 5 in Drive</a></div>`:`<div class="empty"><strong>No cross-section yet.</strong>Generate Figure 5 when you need it.</div>`;
   const body=`
     <div class="card">
       <div class="kv">
@@ -127,11 +129,13 @@ function renderProject(app){
       </div>
       <div class="actions">
         <button class="btn primary" ${busy?"disabled":""} onclick="generateSitePlan()">${busy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
+        <button class="btn ghost" ${busy?"disabled":""} onclick="generateSection()">${busy?"Generating ~1 min":"Generate Cross-Section"}</button>
         <button class="btn ghost" onclick="refreshProject()">Refresh Status</button>
       </div>
       ${status.status||status.errorNotes?`<div class="status ${statusClass}">${esc(status.errorNotes||status.status||"")}${status.lastFinished?` - ${esc(status.lastFinished)}`:""}</div>`:""}
     </div>
-    <div class="section">Figure 4</div>${pdf}`;
+    <div class="section">Figure 4</div>${fig4Pdf}
+    <div class="section">Figure 5</div>${fig5Pdf}`;
   app.innerHTML=shell(p.projectNumber,p.address,body,true);
 }
 
@@ -168,6 +172,14 @@ async function generateSitePlan(){
   try{
     state.status={status:"Queued"};render();
     await bridge("generateSitePlan",{projectNumber:state.project.projectNumber});
+    startPolling(state.project.projectNumber);
+  }catch(e){toast(e.message);await refreshProject()}
+}
+async function generateSection(){
+  if(!state.project)return;
+  try{
+    state.status={status:"Queued"};render();
+    await bridge("generateSection",{projectNumber:state.project.projectNumber});
     startPolling(state.project.projectNumber);
   }catch(e){toast(e.message);await refreshProject()}
 }

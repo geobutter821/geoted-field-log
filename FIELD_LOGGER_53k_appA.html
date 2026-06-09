@@ -245,6 +245,7 @@ const ALL_PROJECTS = [
 ];
 
 // ════════════ STATE ════════════
+const FIELD_LOG_BRIDGE_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6LDKgtBj9JFwLME9ShnOBjG4tINc8Em7XuHfHjIQvRLVtmUUNzZ1RccaEg/exec";
 let state = {activeProjects:[], points:{}};
 function loadState(){try{const s=localStorage.getItem("geoted_fieldlog_v3");if(s)state=JSON.parse(s);}catch(e){}}
 function saveState(){
@@ -454,6 +455,7 @@ function renderPointDetail(){
     <div class="sec" style="margin-top:24px;">ACTIONS</div>
     <div class="btn-row">
       <button class="btn btn-ok btn-sm" onclick="showLog('${p.id}','${pt.id}')">👁 Preview Log</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveLogPdf('${p.id}','${pt.id}')">Save PDF to Logs</button>
       <button class="btn btn-ghost btn-sm" onclick="exportCSV('${p.id}','${pt.id}')">⬇ Export CSV</button></div>
   </div>`;
 }
@@ -736,10 +738,9 @@ function deleteSample(projectId,pointId,sampleId){if(!confirm("Delete this sampl
   pts[i].samples=pts[i].samples.filter(x=>x.id!==sampleId);saveState();go("pointDetail",projectId,pointId);}
 
 // ════════════ LOG PREVIEW ════════════
-function showLog(projectId,pointId){
+function buildLogMarkup(projectId,pointId){
   const p=getProject(projectId);
   const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[],samples:[]};
-  document.getElementById("logTitle").textContent=`LA Soil Reports — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
   let rows="";
   pt.layers.forEach(l=>{
     const ls=pt.samples.filter(s=>{const d=parseFloat(s.depth||99);const top=parseFloat(l.topDepth||0),bot=parseFloat(l.bottomDepth||99);if(isNaN(d)||d>bot)return false;if(d>top)return true;return d===top&&top===0;});
@@ -760,7 +761,7 @@ function showLog(projectId,pointId){
   });
   if(pt.layers.length===0)rows=`<tr><td colspan="4" style="text-align:center;color:#999;padding:20px;">No layers logged yet</td></tr>`;
   const foot=`END OF ${(pt.type||"TEST PIT").toUpperCase()} — Total Depth: ${pt.totalDepth||"—"} ft. Groundwater: ${pt.groundwater||"—"}. Caving: ${pt.caving||"—"}. Backfilled: ${pt.backfilled||"—"}.`;
-  document.getElementById("logBody").innerHTML=`
+  const body=`
     <table class="log-grid"><thead><tr>
       <th class="col-depth">DEPTH (ft)</th><th class="col-sample">SAMPLE / LAB</th>
       <th class="col-unit">LAYER / UNIT</th><th class="col-desc">DESCRIPTION (USCS)</th></tr></thead>
@@ -771,9 +772,68 @@ function showLog(projectId,pointId){
       <div><span class="ltlabel">DATE LOGGED</span>${esc(pt.date||"—")}</div>
       <div><span class="ltlabel">PROJECT No.</span>${esc(p.id)}</div>
       <div><span class="ltlabel">LOGGED BY</span>${esc(pt.loggedBy||"—")}</div></div>`;
+  const title=`LA Soil Reports — ${pt.type||"Log"}: ${pt.pointId||pt.id}`;
+  const safePoint=safeFileName(pt.pointId||pt.id||"point");
+  return {project:p,point:pt,title,body,fileName:`${p.id}_${safePoint}_field_log.pdf`};
+}
+function showLog(projectId,pointId){
+  const log=buildLogMarkup(projectId,pointId);
+  document.getElementById("logTitle").textContent=log.title;
+  document.getElementById("logBody").innerHTML=log.body;
   document.getElementById("logOverlay").classList.add("show");
 }
 function closeLog(){document.getElementById("logOverlay").classList.remove("show");}
+
+function buildPdfHtml(log){
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,sans-serif;color:#111;margin:24px;}
+    .log-wrap{max-width:720px;margin:0 auto;}
+    .log-topbar{border-bottom:2px solid #000;margin-bottom:8px;padding-bottom:6px;}
+    .log-topbar h2{font-size:14px;font-weight:700;font-family:monospace;margin:0;}
+    .log-grid{width:100%;border-collapse:collapse;font-family:monospace;font-size:11px;}
+    .log-grid th,.log-grid td{border:1px solid #666;padding:3px 5px;vertical-align:top;}
+    .log-grid th{background:#dfe8cf;font-weight:700;text-align:center;font-size:10px;}
+    .log-grid .col-depth{width:52px;text-align:center;white-space:pre-line;}
+    .log-grid .col-sample{width:92px;text-align:center;white-space:pre-line;font-size:10px;}
+    .log-grid .col-unit{width:110px;text-align:center;white-space:pre-line;font-weight:600;}
+    .log-grid .col-desc{white-space:pre-wrap;min-width:220px;}
+    .log-footer{font-family:monospace;font-size:11px;border:1px solid #666;padding:5px 8px;margin-top:4px;}
+    .log-titleblock{font-family:monospace;font-size:11px;border:1px solid #000;border-top:none;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;}
+    .log-titleblock div{border:1px solid #888;padding:4px 6px;}
+    .log-titleblock .ltlabel{font-size:9px;color:#555;display:block;}
+  </style></head><body><div class="log-wrap"><div class="log-topbar"><h2>${esc(log.title)}</h2></div>${log.body}</div></body></html>`;
+}
+
+function fieldBridge(action,payload){
+  const cb="__fieldlog_cb_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+  const url=FIELD_LOG_BRIDGE_URL+"?callback="+encodeURIComponent(cb)+"&payload="+encodeURIComponent(JSON.stringify({action,...payload}));
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>{cleanup();reject(new Error("Drive save timed out."));},45000);
+    function cleanup(){clearTimeout(timer);delete window[cb];script.remove();}
+    window[cb]=(res)=>{cleanup();res&&res.ok?resolve(res.result):reject(new Error(res&&res.error?res.error:"Drive save failed."));};
+    script.onerror=()=>{cleanup();reject(new Error("Could not reach the Drive bridge."));};
+    script.src=url;
+    document.body.appendChild(script);
+  });
+}
+
+async function saveLogPdf(projectId,pointId){
+  const log=buildLogMarkup(projectId,pointId);
+  if(!log.point||!log.point.pointId){alert("Save the point before exporting a PDF.");return;}
+  try{
+    const res=await fieldBridge("saveFieldLogPdf",{
+      projectNumber:projectId,
+      pointId:log.point.pointId,
+      fileName:log.fileName,
+      html:buildPdfHtml(log)
+    });
+    alert(`Saved PDF to Logs folder:\n${res.fileName}`);
+    if(res.fileUrl) window.open(res.fileUrl,"_blank");
+  }catch(err){
+    alert(`PDF save failed: ${err.message}`);
+  }
+}
 
 // ════════════ CSV EXPORT (V2-shaped) ════════════
 function exportCSV(projectId,pointId){
@@ -799,6 +859,7 @@ function v(id){const el=document.getElementById(id);return el?el.value.trim():""
 function safeVal(id){const el=document.getElementById(id);return el?el.value:"";}
 function cleanDash(s){return s==="—"?"":s;}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function safeFileName(s){return String(s||"log").replace(/[\\/:*?"<>|]+/g,"_").replace(/\s+/g,"_");}
 function cc(x){const s=String(x==null?"":x);return s.includes(",")||s.includes('"')||s.includes("\n")?`"${s.replace(/"/g,'""')}"`:s;}
 function sel(id,opts,selected,extra=""){return `<select class="select" id="${id}" ${extra}>${opts.map(o=>`<option value="${esc(o)}"${o===selected?" selected":""}>${esc(o)}</option>`).join("")}</select>`;}
 function dl(fn,c){const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(c);a.download=fn;a.click();}

@@ -45,6 +45,7 @@ What it does:
 
 - Project -> points -> addPoint -> pointDetail -> addLayer -> addSample.
 - Logs layers and samples.
+- Has a `Save PDF to Logs` action on point detail. This calls the Apps Script bridge action `saveFieldLogPdf` and should create a PDF in the selected project's `Logs & Lab & Calcs/Logs` folder.
 - Has verified Dibblee geologic units.
 - Handles sample/layer boundary logic.
 - Has strike/dip direction logic.
@@ -52,6 +53,8 @@ What it does:
 - Exports CSVs for the field log workflow.
 
 This is the field logger. It should be embedded into or launched from App B later. Do NOT use it to overwrite App B.
+
+Bridge note: the field logger PDF save requires the deployed Apps Script Web App to include the `saveFieldLogPdf` action from `G:\My Drive\GeoTed_AI_Operations\06_Automation\site_plan_automation_v2\FieldAppWebBridge.gs`. If the phone says `Unknown action: saveFieldLogPdf`, the static app is current but the Apps Script deployment is still old and must be redeployed.
 
 ## Next Real Job
 

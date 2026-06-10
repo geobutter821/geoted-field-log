@@ -123,6 +123,7 @@ html,body{background:#dde1e9;font-family:-apple-system,BlinkMacSystemFont,"Segoe
     <div class="sheet-head"><h3>Add Project</h3><button class="btn-close" onclick="closeAddProject()">✕</button></div>
     <div style="padding:0 16px;">
       <input class="search-box" id="projectSearch" placeholder="Project # or address…" oninput="filterProjects()">
+      <div id="projectLoadStatus" style="font-size:11px;color:#8a94a6;padding:2px 0 6px;min-height:16px;"></div>
       <div id="projectList"></div>
     </div>
   </div>
@@ -238,11 +239,12 @@ const BEDROCK_TYPES = {
     structure:["Bedded","Fractured"]},
 };
 
-// Projects (from V2 01_Project_Setup)
-const ALL_PROJECTS = [
+// Projects — offline fallback; replaced at startup by loadProjectsFromV2()
+const FALLBACK_PROJECTS = [
   {id:"26-02",address:"16215 Dorilee Ln",city:"Encino",state:"CA",zip:"91436",
    lat:"34.1329484",lng:"-118.485788",region:"M",defaultBedrock:"Sandstone and shale"},
 ];
+let ALL_PROJECTS = [...FALLBACK_PROJECTS];
 
 // ════════════ STATE ════════════
 const FIELD_LOG_BRIDGE_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6LDKgtBj9JFwLME9ShnOBjG4tINc8Em7XuHfHjIQvRLVtmUUNzZ1RccaEg/exec";
@@ -868,7 +870,25 @@ function dl(fn,c){const a=document.createElement("a");a.href="data:text/csv;char
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="f_sampleId")e.target.dataset.touched="1";
   if(e.target&&e.target.id==="f_description")e.target.dataset.auto="0";});
 
-loadState();render();
+async function loadProjectsFromV2(){
+  try{
+    const projects=await fieldBridge("getProjects",{});
+    if(Array.isArray(projects)&&projects.length>0){
+      ALL_PROJECTS=projects;
+      const el=document.getElementById("projectLoadStatus");
+      if(el)el.textContent="Projects loaded from V2 ("+projects.length+")";
+    }else{
+      const el=document.getElementById("projectLoadStatus");
+      if(el)el.textContent="Using offline fallback project list";
+    }
+  }catch(err){
+    console.warn("V2 project load failed; using fallback.",err);
+    const el=document.getElementById("projectLoadStatus");
+    if(el)el.textContent="Using offline fallback project list";
+  }
+}
+
+loadState();render();loadProjectsFromV2();
 </script>
 </body>
 </html>

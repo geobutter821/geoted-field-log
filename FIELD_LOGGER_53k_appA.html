@@ -469,7 +469,7 @@ function renderAddLayer(){
   const pt=(state.points[p.id]||[]).find(x=>x.id===route.pointId)||{layers:[],samples:[]};
   const editId=route.mode&&route.mode.startsWith("edit_")?route.mode.slice(5):null;
   const ed=editId?pt.layers.find(l=>l.id===editId):null;
-  const lastBottom=pt.layers.length>0&&!ed?pt.layers[pt.layers.length-1].bottomDepth:"";
+  const lastBottom=pt.layers.length>0&&!ed?pt.layers[pt.layers.length-1].bottomDepth:"0";
   const d=ed||{id:uid(),layerType:"Fill",topDepth:lastBottom,bottomDepth:"",
     uscs:"",geoUnit:"",bedrockType:"",description:"",color:"",moisture:"Moist",density:"Medium Dense",
     weathering:"",bedding:"",contact:"",strike:"",dip:"",dipDir:"",notes:""};

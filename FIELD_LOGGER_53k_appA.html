@@ -458,7 +458,8 @@ function renderPointDetail(){
     <div class="btn-row">
       <button class="btn btn-ok btn-sm" onclick="showLog('${p.id}','${pt.id}')">👁 Preview Log</button>
       <button class="btn btn-ghost btn-sm" onclick="saveLogPdf('${p.id}','${pt.id}')">Save PDF to Logs</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportCSV('${p.id}','${pt.id}')">⬇ Export CSV</button></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV('${p.id}','${pt.id}')">⬇ Export CSV</button>
+      <button class="btn btn-ok btn-sm" onclick="syncToV2('${p.id}','${pt.id}')">⬆ Sync to V2</button></div>
   </div>`;
 }
 
@@ -852,6 +853,31 @@ function exportCSV(projectId,pointId){
     const mat=m?(m.layerType==="Bedrock"?(m.bedrockType||"Bedrock"):m.uscs):"";
     return [`${p.id}_${pt.pointId}_S${i+1}`,p.id,pt.pointId,s.sampleId,s.depth,s.type,m?m.layerType:"",mat,s.blows,s.fieldMoisture,s.fieldDensity,s.blows6in,s.samplingMethod,s.notes,`${p.id}|${pt.pointId}`,`${p.id}|${pt.pointId}|${i+1}`].map(cc).join(",");}).join("\n");
   dl(`out_04_FieldSamples_${pt.pointId||pt.id}.csv`,fs_h+"\n"+fs_r);
+}
+
+// ════════════ SYNC TO V2 (writes 02/03/04 via bridge) ════════════
+function packPoint(pt){
+  return {pointId:pt.pointId,type:pt.type,lat:pt.lat,lng:pt.lng,accuracy:pt.accuracy,
+    date:pt.date,loggedBy:pt.loggedBy,totalDepth:pt.totalDepth,groundwater:pt.groundwater,
+    caving:pt.caving,backfilled:pt.backfilled,notes:pt.notes||"",
+    layers:(pt.layers||[]).map(l=>({layerType:l.layerType,topDepth:l.topDepth,bottomDepth:l.bottomDepth,
+      uscs:l.uscs,geoUnit:l.geoUnit,bedrockType:l.bedrockType,description:l.description,color:l.color,
+      moisture:l.moisture,density:l.density,weathering:l.weathering,bedding:l.bedding,strike:l.strike,
+      dip:l.dip,dipDir:l.dipDir,contact:l.contact,notes:l.notes})),
+    samples:(pt.samples||[]).map(s=>({sampleId:s.sampleId,depth:s.depth,type:s.type,blows:s.blows,
+      fieldMoisture:s.fieldMoisture,fieldDensity:s.fieldDensity,blows6in:s.blows6in,
+      samplingMethod:s.samplingMethod,notes:s.notes}))};
+}
+async function syncToV2(projectId,pointId){
+  const pt=(state.points[projectId]||[]).find(x=>x.id===pointId);
+  if(!pt||!pt.pointId){alert("Save the point before syncing.");return;}
+  if(!pt.lat||!pt.lng){alert("Point needs GPS coordinates before syncing.");return;}
+  try{
+    const res=await fieldBridge("syncFieldData",{projectNumber:projectId,points:[packPoint(pt)]});
+    alert(`Synced to V2:\n${res.points} point, ${res.layers} layer(s), ${res.samples} sample(s).\n\nNow generate the site plan from the Figures app.`);
+  }catch(err){
+    alert(`Sync failed: ${err.message}`);
+  }
 }
 
 // ════════════ UTILS ════════════

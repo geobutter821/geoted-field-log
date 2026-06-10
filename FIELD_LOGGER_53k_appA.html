@@ -874,7 +874,7 @@ async function syncToV2(projectId,pointId){
   if(!pt.lat||!pt.lng){alert("Point needs GPS coordinates before syncing.");return;}
   try{
     const res=await fieldBridge("syncFieldData",{projectNumber:projectId,points:[packPoint(pt)]});
-    alert(`Synced to V2:\n${res.points} point, ${res.layers} layer(s), ${res.samples} sample(s).\n\nNow generate the site plan from the Figures app.`);
+    alert(`Synced to V2:\n${res.points} point, ${res.layers} layer(s), ${res.samples} sample(s).\nSection line: ${res.sectionLine||"n/a"}.\n\nNow generate the site plan from the Figures app.`);
   }catch(err){
     alert(`Sync failed: ${err.message}`);
   }

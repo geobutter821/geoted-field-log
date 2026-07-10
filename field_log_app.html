@@ -74,7 +74,7 @@ const DEFAULT_WEB_APP_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6L
 const POLL_MS=5000;
 const FOLDER_ICONS={"Figures":"📐","Logs & Lab & Calcs":"📋","Prior Reports":"📁","Report":"📄","PDF":"📑","Photos":"📷","Correspondences":"✉️","Emailed Plans":"📧","Proposal":"📝","Daily Field Reports":"📅"};
 const FOLDER_HAS_TOOL={"Figures":true,"Logs & Lab & Calcs":true,"Prior Reports":true,"Report":true};
-const state={view:"home",projects:[],project:null,subfolders:[],folder:null,folderFiles:[],status:null,loading:false,poll:null,lastStatusKey:""};
+const state={view:"home",projects:[],project:null,subfolders:[],folder:null,folderFiles:[],status:null,loading:false,poll:null,lastStatusKey:"",frontFiguresBusy:false,frontFiguresMessage:"",frontFiguresStatus:""};
 
 function getCfg(){try{const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}");if(!cfg.url)cfg.url=DEFAULT_WEB_APP_URL;return cfg}catch(e){return {url:DEFAULT_WEB_APP_URL}}}
 function setCfg(cfg){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
@@ -94,7 +94,8 @@ function bridge(action,payload={}){
   const url=cfg.url+(cfg.url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&payload="+encodeURIComponent(JSON.stringify(body));
   return new Promise((resolve,reject)=>{
     const script=document.createElement("script");
-    const timer=setTimeout(()=>{cleanup();reject(new Error("Web App request timed out."))},30000);
+    const timeoutMs=action==="generateFigures123"?300000:30000;
+    const timer=setTimeout(()=>{cleanup();reject(new Error("Web App request timed out."))},timeoutMs);
     function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}
     window[cb]=(res)=>{cleanup();res&&res.ok?resolve(res.result):reject(new Error(res&&res.error?res.error:"Web App error"))};
     script.onerror=()=>{cleanup();reject(new Error("Could not reach Web App."))};
@@ -184,19 +185,22 @@ function renderFiguresTools(){
   const p=state.project;
   if(!p) return "";
   const s=state.status||{};
-  const busy=["Queued","Running"].includes(s.status);
+  const frontBusy=state.frontFiguresBusy;
+  const busy=["Queued","Running"].includes(s.status)||frontBusy;
   const fig4=s.fig4Link||"";
   const fig5=s.fig5Link||"";
   const canSection=!!fig4&&!busy;
   const statusClass=s.errorNotes?"err":busy?"warn":s.status==="Preview Ready"?"ok":"";
+  const frontClass=state.frontFiguresStatus==="err"?"err":state.frontFiguresStatus==="warn"?"warn":state.frontFiguresStatus==="ok"?"ok":"";
   const fig4Pdf=fig4?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig4))}" title="Figure 4 Site Plan"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig4)}">Open Figure 4 in Drive</a></div>`:"";
   const fig5Pdf=fig5?`<div class="pdfWrap"><iframe class="pdfFrame" src="${esc(pdfEmbedUrl(fig5))}" title="Figure 5 Cross-Section"></iframe><a class="pdfLink" target="_blank" rel="noopener" href="${esc(fig5)}">Open Figure 5 in Drive</a></div>`:"";
   return `<div class="card">
     <div class="actions">
-      <button class="btn primary" ${busy?"disabled":""} onclick="generateSitePlan()">${busy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
-      <button class="btn ghost" ${canSection?"":"disabled"} onclick="generateSection()">${busy?"Generating…":fig4?"Generate Cross-Section":"Generate Site Plan First"}</button>
-      <button class="btn ghost" ${busy?"disabled":""} onclick="generateSitePlanAndSection()">${busy?"Generating…":"Generate Site Plan + Cross-Section"}</button>
+      <button class="btn primary" ${busy?"disabled":""} onclick="generateFigures123()">${frontBusy?`<span class="spinner"></span> Generating Figures 1-3`:"Generate Figures 1-3"}</button>
+      <button class="btn ghost" ${busy?"disabled":""} onclick="generateSitePlan()">${busy&&!frontBusy?`<span class="spinner"></span> Generating ~1 min`:"Generate / Refresh Site Plan"}</button>
+      <button class="btn ghost" ${canSection?"":"disabled"} onclick="generateSection()">${busy?"Generating...":fig4?"Generate Cross-Section":"Generate Site Plan First"}</button>
     </div>
+    ${state.frontFiguresMessage?`<div class="status ${frontClass}">${esc(state.frontFiguresMessage)}</div>`:""}
     ${s.status||s.errorNotes?`<div class="status ${statusClass}">${esc(s.errorNotes||s.status||"")}${s.lastFinished?` · ${esc(s.lastFinished)}`:""}</div>`:""}
   </div>
   ${fig4?`<div class="section">Figure 4</div>${fig4Pdf}`:""}
@@ -293,6 +297,33 @@ async function generateSitePlan(){
   }catch(e){toast(e.message)}
 }
 
+async function generateFigures123(){
+  if(!state.project)return;
+  state.frontFiguresBusy=true;
+  state.frontFiguresStatus="warn";
+  state.frontFiguresMessage="Generating Figures 1-3...";
+  render();
+  try{
+    const result=await bridge("generateFigures123",{projectNumber:state.project.projectNumber});
+    state.frontFiguresStatus=result.status==="Incomplete"?"warn":"ok";
+    state.frontFiguresMessage=result.message||"Figures 1-3 generated.";
+    if(state.folder&&state.folder.folderId){
+      state.folderFiles=await bridge("listFolderFiles",{folderId:state.folder.folderId});
+    }
+    try{
+      state.status=await bridge("getStatus",{projectNumber:state.project.projectNumber});
+      state.lastStatusKey=statusKey(state.status);
+    }catch(e){}
+  }catch(e){
+    state.frontFiguresStatus="err";
+    state.frontFiguresMessage="Figure 1-3 generation failed: "+e.message;
+    toast(e.message);
+  }finally{
+    state.frontFiguresBusy=false;
+    render();
+  }
+}
+
 async function generateSection(){
   if(!state.project)return;
   const fig4=state.status&&state.status.fig4Link||"";
@@ -300,15 +331,6 @@ async function generateSection(){
   try{
     state.status={status:"Queued"};render();
     await bridge("generateSection",{projectNumber:state.project.projectNumber});
-    startPolling(state.project.projectNumber);
-  }catch(e){toast(e.message)}
-}
-
-async function generateSitePlanAndSection(){
-  if(!state.project)return;
-  try{
-    state.status={status:"Queued"};render();
-    await bridge("generateSitePlanAndSection",{projectNumber:state.project.projectNumber});
     startPolling(state.project.projectNumber);
   }catch(e){toast(e.message)}
 }

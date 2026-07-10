@@ -278,7 +278,40 @@ function renderProjects(){
           <button class="btn-remove" onclick="event.stopPropagation();removeProject('${p.id}')">✕</button>
           <span class="chevron" onclick="go('points','${p.id}')">›</span></div></div>`;}).join("");
   return `<div class="hdr"><div class="hdr-title">LA Soil Reports</div>
-    <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">${cards}</div>`;
+    <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:10px;" id="fetchNewProjectBtn" onclick="fetchNewProject()">📥 Fetch New Project</button>
+    ${cards}</div>`;
+}
+
+// Fetch New Project: asks the bridge to scan the inbox for new Webflow lead
+// emails, create the V2 project row + Drive folder tree, then activates the
+// returned project(s) here.
+async function fetchNewProject(){
+  const btn=document.getElementById("fetchNewProjectBtn");
+  if(btn){btn.disabled=true;btn.textContent="⏳ Checking inbox…";}
+  try{
+    const res=await fieldBridge("fetchNewProjects",{});
+    const made=(res&&res.created)||[];
+    made.forEach(p=>{
+      if(!ALL_PROJECTS.some(x=>x.id===p.id))ALL_PROJECTS.push(p);
+      if(!state.activeProjects.some(x=>x.id===p.id)){state.activeProjects.push(p);if(!state.points[p.id])state.points[p.id]=[];}
+    });
+    if(made.length){
+      saveState();
+      alert(`Fetched ${made.length} new project${made.length!==1?"s":""} from inbox:\n`+
+        made.map(p=>`${p.id} — ${p.address}, ${p.city}`).join("\n")+
+        `\n\nAdded to Active Projects. Drive project folder${made.length!==1?"s":""} set up.`);
+    }else{
+      const skipped=(res&&res.skipped&&res.skipped.length)?`\n\nAlready set up: ${res.skipped.join("; ")}`:"";
+      alert((res&&res.message?res.message:"No new project emails found.")+skipped);
+    }
+  }catch(err){
+    const hint=String(err.message||"").includes("Unknown action")
+      ?"\n\nThe Drive bridge is still on an old version — paste the updated FieldAppWebBridge.gs into the Apps Script project and redeploy."
+      :"";
+    alert("Fetch New Project failed: "+err.message+hint);
+  }
+  render();
 }
 function openAddProject(){document.getElementById("addProjectOverlay").classList.add("show");
   document.getElementById("projectSearch").value="";filterProjects();

@@ -313,6 +313,7 @@ async function generateFigures123(){
     try{
       state.status=await bridge("getStatus",{projectNumber:state.project.projectNumber});
       state.lastStatusKey=statusKey(state.status);
+      if(["Queued","Running",""].includes(state.status.status)) startPolling(state.project.projectNumber);
     }catch(e){}
   }catch(e){
     state.frontFiguresStatus="err";

@@ -743,6 +743,26 @@ function deleteSample(projectId,pointId,sampleId){if(!confirm("Delete this sampl
   pts[i].samples=pts[i].samples.filter(x=>x.id!==sampleId);saveState();go("pointDetail",projectId,pointId);}
 
 // ════════════ LOG PREVIEW ════════════
+// Lab overlay: real M&D from V2 05_Lab_Results (via listFieldSamples action).
+// In-memory only — never persisted, never touches geoted_fieldlog_v3.
+const labCache={};
+function labKeyNorm(v){return String(v==null?"":v).trim().replace(/\.0$/,"");}
+async function refreshLabResults(projectId){
+  try{
+    const res=await fieldBridge("listFieldSamples",{projectNumber:projectId});
+    const map={};
+    (res.samples||[]).forEach(s=>{
+      if(s.labDryDensityPcf!==""||s.labMoisturePct!=="")
+        map[labKeyNorm(s.pointId)+"|"+labKeyNorm(s.sampleId)]={dd:s.labDryDensityPcf,mc:s.labMoisturePct};
+    });
+    labCache[projectId]=map;
+  }catch(err){/* offline or bridge not updated — field estimates still shown */}
+}
+// Cap the wait so the preview never hangs offline; a late fetch still fills
+// the cache for the next open.
+function refreshLabResultsCapped(projectId,ms){
+  return Promise.race([refreshLabResults(projectId),new Promise(r=>setTimeout(r,ms||6000))]);
+}
 function buildLogMarkup(projectId,pointId){
   const p=getProject(projectId);
   const pt=(state.points[projectId]||[]).find(x=>x.id===pointId)||{layers:[],samples:[]};
@@ -756,8 +776,12 @@ function buildLogMarkup(projectId,pointId){
     const samp=ls.map(s=>{
       const lines=[];
       if(s.depth) lines.push(`${s.depth}ft`);
-      if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
-      if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
+      // Lab M&D from 05_Lab_Results wins over the field estimate.
+      const lab=(labCache[projectId]||{})[labKeyNorm(pt.pointId)+"|"+labKeyNorm(s.sampleId)];
+      if(lab&&lab.dd!=="") lines.push(`DD ${lab.dd} pcf`);
+      else if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
+      if(lab&&lab.mc!=="") lines.push(`MC ${lab.mc}%`);
+      else if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
       if(s.blows) lines.push(`${s.blows} bl`);
       return lines.join("\n");
     }).filter(Boolean).join("\n---\n");
@@ -781,7 +805,8 @@ function buildLogMarkup(projectId,pointId){
   const safePoint=safeFileName(pt.pointId||pt.id||"point");
   return {project:p,point:pt,title,body,fileName:`${p.id}_${safePoint}_field_log.pdf`};
 }
-function showLog(projectId,pointId){
+async function showLog(projectId,pointId){
+  await refreshLabResultsCapped(projectId,6000);
   const log=buildLogMarkup(projectId,pointId);
   document.getElementById("logTitle").textContent=log.title;
   document.getElementById("logBody").innerHTML=log.body;
@@ -824,6 +849,7 @@ function fieldBridge(action,payload){
 }
 
 async function saveLogPdf(projectId,pointId){
+  await refreshLabResultsCapped(projectId,10000);
   const log=buildLogMarkup(projectId,pointId);
   if(!log.point||!log.point.pointId){alert("Save the point before exporting a PDF.");return;}
   try{

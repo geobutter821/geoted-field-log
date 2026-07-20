@@ -277,7 +277,7 @@ function renderProjects(){
           <div class="card-sub">${p.city}, ${p.state} ${p.zip} · ${n} point${n!==1?"s":""}</div></div>
           <button class="btn-remove" onclick="event.stopPropagation();removeProject('${p.id}')">✕</button>
           <span class="chevron" onclick="go('points','${p.id}')">›</span></div></div>`;}).join("");
-  return `<div class="hdr"><div class="hdr-title">LA Soil Reports</div>
+  return `<div class="hdr"><div class="hdr-title">LA Soil Reports <span style="font-size:10px;font-weight:400;color:#9aa0ab;">lab-v2</span></div>
     <button class="btn-icon" onclick="openAddProject()">＋</button></div><div class="body">${cards}</div>`;
 }
 function openAddProject(){document.getElementById("addProjectOverlay").classList.add("show");
@@ -747,12 +747,15 @@ function deleteSample(projectId,pointId,sampleId){if(!confirm("Delete this sampl
 // In-memory only — never persisted, never touches geoted_fieldlog_v3.
 const labCache={};
 function labKeyNorm(v){return String(v==null?"":v).trim().replace(/\.0$/,"");}
+// A lab value must be a real number — guards against an older bridge version
+// that omits the lab fields entirely (undefined must not become "DD undefined").
+function hasLabVal(v){return v!=null&&v!==""&&isFinite(Number(v));}
 async function refreshLabResults(projectId){
   try{
     const res=await fieldBridge("listFieldSamples",{projectNumber:projectId});
     const map={};
     (res.samples||[]).forEach(s=>{
-      if(s.labDryDensityPcf!==""||s.labMoisturePct!=="")
+      if(hasLabVal(s.labDryDensityPcf)||hasLabVal(s.labMoisturePct))
         map[labKeyNorm(s.pointId)+"|"+labKeyNorm(s.sampleId)]={dd:s.labDryDensityPcf,mc:s.labMoisturePct};
     });
     labCache[projectId]=map;
@@ -778,9 +781,9 @@ function buildLogMarkup(projectId,pointId){
       if(s.depth) lines.push(`${s.depth}ft`);
       // Lab M&D from 05_Lab_Results wins over the field estimate.
       const lab=(labCache[projectId]||{})[labKeyNorm(pt.pointId)+"|"+labKeyNorm(s.sampleId)];
-      if(lab&&lab.dd!=="") lines.push(`DD ${lab.dd} pcf`);
+      if(lab&&hasLabVal(lab.dd)) lines.push(`DD ${lab.dd} pcf`);
       else if(s.fieldDensity) lines.push(`DD ${s.fieldDensity} pcf`);
-      if(lab&&lab.mc!=="") lines.push(`MC ${lab.mc}%`);
+      if(lab&&hasLabVal(lab.mc)) lines.push(`MC ${lab.mc}%`);
       else if(s.fieldMoisture) lines.push(`MC ${s.fieldMoisture}%`);
       if(s.blows) lines.push(`${s.blows} bl`);
       return lines.join("\n");

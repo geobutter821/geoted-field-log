@@ -1,0 +1,19 @@
+{
+  "name": "GeoTed Lab Bench",
+  "short_name": "Lab Bench",
+  "description": "Offline-capable GeoTed lab entry for moisture-density and outsourced laboratory results.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f2",
+  "theme_color": "#14522f",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

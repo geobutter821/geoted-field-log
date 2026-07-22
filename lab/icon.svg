@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">GeoTed Lab Bench</title>
+  <desc id="desc">A white laboratory flask over green soil layers.</desc>
+  <rect width="512" height="512" rx="96" fill="#14522f"/>
+  <path d="M205 86h102v36l-20 14v87l91 151c16 27-3 52-34 52H168c-31 0-50-25-34-52l91-151v-87l-20-14V86z" fill="#fff"/>
+  <path d="M190 336h132l48 79H142l48-79z" fill="#8fd19e"/>
+  <path d="M173 371h166M157 399h198" stroke="#1f6f43" stroke-width="14" stroke-linecap="round"/>
+  <path d="M222 157h68" stroke="#14522f" stroke-width="16" stroke-linecap="round"/>
+</svg>

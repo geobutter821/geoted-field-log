@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lab Bench">
+<meta name="theme-color" content="#14522f">
+<link rel="manifest" href="lab.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>GeoTed Lab Bench v1</title>
+<style>
+  :root{
+    --bg:#f4f5f2; --card:#ffffff; --ink:#1d2b23; --muted:#6b7a70;
+    --line:#d8ddd6; --accent:#1f6f43; --accent-dk:#14522f;
+    --manual:#b45309; --manual-bg:#fef3e2; --manual-line:#f5c67f;
+    --derived:#166534; --derived-bg:#ecf7ee; --derived-line:#a7d7b4;
+    --warn:#b91c1c; --warn-bg:#fdecec;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:80px;}
+  header{background:var(--accent-dk);color:#fff;padding:12px 14px;position:sticky;top:0;z-index:20;}
+  header h1{font-size:17px;font-weight:700;letter-spacing:.3px;}
+  header .sub{font-size:11px;opacity:.75;margin-top:2px;}
+  .wrap{max-width:760px;margin:0 auto;padding:12px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+  label{display:block;font-size:11px;color:var(--muted);margin:8px 0 3px;}
+  input,select,textarea{width:100%;font-size:15px;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .row{display:flex;gap:8px;}
+  .row>*{flex:1;min-width:0;}
+  button{font-size:14px;font-weight:600;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-secondary{background:#fff;color:var(--accent-dk);border:1.5px solid var(--accent);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  button:disabled{opacity:.45;cursor:default;}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .toolbar button{flex:1;min-width:130px;}
+  .status{font-size:12px;color:var(--muted);margin:6px 2px;min-height:16px;}
+  .status.err{color:var(--warn);}
+  .status.ok{color:var(--derived);}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;}
+  .card-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f0f3ee;border-bottom:1px solid var(--line);cursor:pointer;}
+  .card-head .pid{font-weight:700;font-size:15px;}
+  .card-head .meta{font-size:12px;color:var(--muted);flex:1;}
+  .badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;letter-spacing:.4px;}
+  .badge.v2{background:var(--derived-bg);color:var(--derived);border:1px solid var(--derived-line);}
+  .badge.manual{background:var(--manual-bg);color:var(--manual);border:1px solid var(--manual-line);}
+  .badge.synced{background:#e0ecff;color:#1d4ed8;border:1px solid #b3ccf5;}
+  .badge.repair{background:var(--warn-bg);color:var(--warn);border:1px solid #eec9c9;}
+  .card-body{padding:12px;display:none;}
+  .card.open .card-body{display:block;}
+  .sec{border:1px solid var(--manual-line);background:var(--manual-bg);border-radius:8px;padding:10px;margin-top:10px;}
+  .sec.derived{border-color:var(--derived-line);background:var(--derived-bg);}
+  .sec h3{font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .sec h3 .tag{font-weight:400;}
+  .sec .h-manual{color:var(--manual);}
+  .sec .h-derived{color:var(--derived);}
+  .outgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+  .outbox{background:#fff;border:1px solid var(--derived-line);border-radius:7px;padding:8px;text-align:center;}
+  .outbox .val{font-size:18px;font-weight:700;color:var(--derived);}
+  .outbox .val.blank{color:#b9c4bc;font-weight:400;}
+  .outbox .lab{font-size:10px;color:var(--muted);margin-top:2px;}
+  .card-actions{display:flex;gap:8px;margin-top:12px;}
+  .card-actions button{flex:1;font-size:13px;padding:8px;}
+  .del{color:var(--warn);border-color:#eec9c9;}
+  .footer-note{font-size:11px;color:var(--muted);text-align:center;margin:16px 0;}
+  .empty{padding:24px;text-align:center;color:var(--muted);font-size:14px;}
+  .test-suite{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+  .test-suite-head,.test-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .test-suite-head h3,.test-head h3{font-size:12px;text-transform:uppercase;letter-spacing:.45px;}
+  .test{border:1px solid #c9d5de;background:#f8fbfd;border-radius:8px;padding:10px;margin-top:9px;}
+  .test.graph{border-color:#b7c5dc;background:#f5f7fc;}
+  .test.design{border-color:#b8cdbf;background:#f5faf6;}
+  .grid2,.grid3{display:grid;gap:8px;}
+  .grid2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .grid3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .checkline{display:flex;align-items:flex-start;gap:7px;margin-top:9px;font-size:12px;color:var(--ink);}
+  .checkline input{width:auto;margin-top:2px;}
+  .record-meta{font-size:10px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere;}
+  .guard{font-size:11px;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:7px;margin-top:7px;}
+  .carried{border:1px solid #b3ccf5;background:#f2f7ff;border-radius:8px;padding:9px;margin-top:8px;font-size:12px;}
+  .mini{font-size:12px;padding:7px 9px;}
+  .source-select{font-size:12px;}
+  @media(max-width:620px){.grid2,.grid3{grid-template-columns:1fr}.outgrid{grid-template-columns:1fr}.row{flex-wrap:wrap}.row>*{flex:1 1 130px;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>GeoTed Lab Bench v1</h1>
+  <div class="sub">One project entry point for M&amp;D, outsourced shear/consolidation, and Ted-approved design inputs</div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <h2>Project</h2>
+    <div class="row">
+      <select id="projectSelect"><option value="">— load or type a project —</option></select>
+      <button class="btn-secondary" id="btnLoadProjects" style="flex:0 0 auto;">Load projects</button>
+    </div>
+    <label>Or type a project number (offline fallback)</label>
+    <input id="projectManual" placeholder="e.g. 26-02" autocapitalize="characters">
+    <label>Lab constants (set once — used for every sample)</label>
+    <div class="row">
+      <div><label>Ring weight (g, each)</label><input id="defaultRingWt" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 43.7"></div>
+      <div><label>Ring volume (cc, each)</label><input id="defaultRingVol" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 75.0"></div>
+      <div><label>Dish weight (g)</label><input id="defaultTareWt" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 0.4"></div>
+    </div>
+    <label>Lab write secret (session only; required for sync)</label>
+    <input id="writeSecret" type="password" autocomplete="off" placeholder="Set LAB_BENCH_WRITE_SECRET in Apps Script first">
+    <div class="status" id="projStatus"></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-secondary" id="btnLoadSamples">Load project lab data</button>
+    <button class="btn-secondary" id="btnAddManual">Add sample manually</button>
+  </div>
+
+  <div id="sampleList"><div class="empty">Pick a project, then load its field samples or add one manually.</div></div>
+  <div id="designPanel"></div>
+
+  <div class="toolbar">
+    <button class="btn-primary" id="btnSyncAll">Sync lab register</button>
+    <button class="btn-ghost" id="btnExportCsv">Export CSV (05-shaped)</button>
+  </div>
+  <div class="status" id="syncStatus"></div>
+
+  <div class="footer-note">
+    Amber = manual bench entry &middot; Green = computed &middot; Blue = carried legacy result.<br>
+    Data autosaves to this device. Canonical revisions append to 15_Lab_Bench_Register; M&amp;D also projects to 05_Lab_Results.
+  </div>
+</div>
+
+<script>
+"use strict";
+// Same deployed bridge as the field logger (FieldAppWebBridge.gs web app).
+// Requires the four LabBridgeAdditions.gs actions (listFieldSamples,
+// syncLabResults, getLabRegister, syncLabRegister) in the bound project.
+const LAB_BRIDGE_URL="https://script.google.com/macros/s/AKfycbz9JmT1rIqw6LDKgtBj9JFwLME9ShnOBjG4tINc8Em7XuHfHjIQvRLVtmUUNzZ1RccaEg/exec";
+const STORE_KEY="geoted_labapp_v1"; // never touch geoted_fieldlog_v3
+const G_TO_PCF=62.42796; // 1 g/cc in pcf
+const REGISTER_SCHEMA="lab-register-v1";
+const REGISTER_TYPES=["MoistureDensity","DirectShear","Consolidation","DesignShear","DesignConsolidation"];
+const DEFAULT_CONSTANTS={ringWt:"43.7",ringVol:"75.0",tareWt:"0.4"};
+const WRITE_SECRET_SESSION_KEY="geoted_lab_write_secret_session";
+
+const USCS_OPTIONS=["","SM","SC","CL","ML","GP","Bedrock"];
+const TYPE_OPTIONS=["Ring","SPT","Bulk/Bag","Other"];
+
+let state=load();
+let projectRequestSeq=0;
+function load(){
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(STORE_KEY));}catch(e){}
+  if(!s||typeof s!=="object")s={};
+  s.projects=Array.isArray(s.projects)?s.projects:[];
+  s.samples=s.samples&&typeof s.samples==="object"?s.samples:{};
+  s.registers=s.registers&&typeof s.registers==="object"?s.registers:{};
+  if(s.defaultRingWt==null||s.defaultRingWt==="")s.defaultRingWt=DEFAULT_CONSTANTS.ringWt;
+  if(s.defaultRingVol==null||s.defaultRingVol==="")s.defaultRingVol=DEFAULT_CONSTANTS.ringVol;
+  if(s.defaultTareWt==null||s.defaultTareWt==="")s.defaultTareWt=DEFAULT_CONSTANTS.tareWt;
+  Object.keys(s.samples).forEach(p=>(s.samples[p]||[]).forEach(sample=>{
+    if(typeof sample.ringsExplicit!=="boolean")sample.ringsExplicit=false;
+    if(typeof sample.mdDirty!=="boolean")sample.mdDirty=false;
+  }));
+  s.version=2;
+  return s;
+}
+function save(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
+
+// ── JSONP bridge (same convention as field logger: JSONP, not fetch) ──
+function labBridge(action,payload){
+  const cb="__labapp_cb_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+  const url=LAB_BRIDGE_URL+"?callback="+encodeURIComponent(cb)+"&payload="+encodeURIComponent(JSON.stringify(Object.assign({action:action},payload||{})));
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>{cleanup();reject(new Error("Bridge timed out."));},45000);
+    function cleanup(){clearTimeout(timer);delete window[cb];script.remove();}
+    window[cb]=(res)=>{cleanup();res&&res.ok?resolve(res.result):reject(new Error(res&&res.error?res.error:"Bridge call failed."));};
+    script.onerror=()=>{cleanup();reject(new Error("Could not reach the Drive bridge."));};
+    script.src=url;
+    document.body.appendChild(script);
+  });
+}
+
+// ── helpers ──
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function num(v){
+  if(v===null||v===undefined||String(v).trim()==="")return null;
+  const t=String(v).trim();
+  if(!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(t))return null;
+  const n=Number(t);return Number.isFinite(n)?n:null;
+}
+function currentProject(){return (document.getElementById("projectSelect").value||document.getElementById("projectManual").value||"").trim();}
+function projSamples(){const p=currentProject();if(!p)return[];if(!state.samples[p])state.samples[p]=[];return state.samples[p];}
+function setStatus(id,msg,cls){const el=document.getElementById(id);el.textContent=msg||"";el.className="status"+(cls?" "+cls:"");}
+function projectRegisterFor(p){
+  if(!p)return{snapshotHash:"",records:[]};
+  if(!state.registers[p])state.registers[p]={snapshotHash:"",records:[]};
+  if(!Array.isArray(state.registers[p].records))state.registers[p].records=[];
+  return state.registers[p];
+}
+function projectRegister(){return projectRegisterFor(currentProject());}
+function recordsForProject(project){return projectRegisterFor(project).records;}
+function registerRecords(){return projectRegister().records;}
+function newClientRecordId(prefix){
+  const id=window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+  return prefix+":"+id;
+}
+function recordKeyForProject(project,clientRecordId){return project+"|"+clientRecordId;}
+function recordKeyFor(clientRecordId){return recordKeyForProject(currentProject(),clientRecordId);}
+function identityPart(value){return String(value==null?"":value).trim().toUpperCase();}
+function sampleMatches(r,s){
+  return identityPart(r.pointId)===identityPart(s.pointId)&&identityPart(r.sampleId)===identityPart(s.sampleId)&&num(r.depthFt)===num(s.depth);
+}
+function mAndDMatches(r,s){return identityPart(r.pointId)===identityPart(s.pointId)&&identityPart(r.sampleId)===identityPart(s.sampleId);}
+function recordByKey(key,project){return recordsForProject(project||currentProject()).find(r=>r.recordKey===key)||null;}
+function sampleRecords(s,type){return registerRecords().filter(r=>r.recordType===type&&(type==="MoistureDensity"?mAndDMatches(r,s):sampleMatches(r,s)));}
+function relatedFactualRecords(s){return registerRecords().filter(r=>["MoistureDensity","DirectShear","Consolidation"].includes(r.recordType)&&(r.recordType==="MoistureDensity"?mAndDMatches(r,s):sampleMatches(r,s)));}
+function recordProvenance(r){
+  const p=r.payload||{};
+  const sample=(r.pointId||"?")+" / S"+(r.sampleId||"?")+(r.depthFt==null?"":" @ "+r.depthFt+" ft");
+  if(p.readOnlyLegacy)return "05_Lab_Results row "+p.sourceRow+"; "+sample;
+  if(r.recordType==="MoistureDensity")return "GeoTed Lab Bench M&D "+sample;
+  return r.recordType+"; "+(p.sourceReportIdentity||"")+"; printed project "+(p.sourceReportProjectNumber||"")+"; specimen "+(p.specimenRef||"")+(p.sourcePage?"; page "+p.sourcePage:"");
+}
+function canonicalValue(v){
+  if(Array.isArray(v))return v.map(canonicalValue);
+  if(v&&typeof v==="object")return Object.keys(v).sort().reduce((o,k)=>{o[k]=canonicalValue(v[k]);return o;},{});
+  return v;
+}
+function canonicalJson(v){return JSON.stringify(canonicalValue(v));}
+async function sha256Hex(text){
+  if(!window.crypto||!crypto.subtle)throw new Error("A secure browser context is required to verify lab hashes.");
+  const bytes=new TextEncoder().encode(String(text));
+  const digest=await crypto.subtle.digest("SHA-256",bytes);
+  return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function verifySnapshot(snapshot,project){
+  if(!snapshot||snapshot.schemaVersion!==REGISTER_SCHEMA)throw new Error("Unexpected lab register schema.");
+  if(snapshot.projectNumber!==project)throw new Error("Lab snapshot project mismatch; nothing was loaded.");
+  if(!Array.isArray(snapshot.records))throw new Error("Lab snapshot records are missing.");
+  let prior="";
+  for(const r of snapshot.records){
+    if(!REGISTER_TYPES.includes(r.recordType))throw new Error("Unsupported saved record type "+r.recordType+".");
+    if(!r.clientRecordId||r.recordKey!==project+"|"+r.clientRecordId)throw new Error("Lab snapshot record identity does not match the selected project.");
+    if(!r.recordKey||r.recordKey<=prior)throw new Error("Lab snapshot keys are unsorted or duplicated.");
+    if(!Number.isInteger(r.revision)||r.revision<1||!/^[0-9a-f]{64}$/.test(r.sourceHash||""))throw new Error("Invalid revision/hash for "+r.recordKey+".");
+    const material={projectNumber:project,recordKey:r.recordKey,clientRecordId:r.clientRecordId,recordType:r.recordType,pointId:r.pointId||"",sampleId:r.sampleId||"",depthFt:r.depthFt==null?null:r.depthFt,payload:r.payload};
+    if(await sha256Hex(canonicalJson(material))!==r.sourceHash)throw new Error("Source hash failed for "+r.recordKey+".");
+    prior=r.recordKey;
+  }
+  const summary=snapshot.records.map(r=>({recordKey:r.recordKey,revision:r.revision,sourceHash:r.sourceHash}));
+  if(await sha256Hex(canonicalJson(summary))!==snapshot.snapshotHash)throw new Error("Lab snapshot hash failed; nothing was loaded.");
+}
+
+// ── bench math ──
+// The lab constant from the Project panel wins; a per-sample value stored by
+// an older version of the app is only used when no constant is set.
+function constNum(sampleVal,defaultVal){
+  const d=num(defaultVal);return d!=null?d:num(sampleVal);
+}
+function computeSample(s){
+  const out={moisturePct:null,wetDensity:null,dryDensity:null,waterWt:null,drySoilWt:null};
+  const tare=constNum(s.tareWt,state.defaultTareWt),wetT=num(s.wetTareWt),dryT=num(s.dryTareWt);
+  if(tare!=null&&wetT!=null&&dryT!=null&&dryT>tare&&wetT>=dryT){
+    out.waterWt=wetT-dryT;
+    out.drySoilWt=dryT-tare;
+    out.moisturePct=out.waterWt/out.drySoilWt*100;
+  }
+  // Multi-ring samples (MGS sheet "Rings/SPT #"): total wet weight includes n
+  // rings, so both ring weight and ring volume scale by the ring count.
+  const n=num(s.rings);
+  const ring=constNum(s.ringWt,state.defaultRingWt),wetR=num(s.wetRingWt),vol=constNum(s.ringVol,state.defaultRingVol);
+  if(s.ringsExplicit&&Number.isInteger(n)&&n>0&&ring!=null&&wetR!=null&&vol!=null&&vol>0&&wetR>n*ring){
+    out.wetDensity=(wetR-n*ring)/(n*vol)*G_TO_PCF;
+    if(out.moisturePct!=null){
+      out.dryDensity=out.wetDensity/(1+out.moisturePct/100);
+    }
+  }
+  return out;
+}
+function fmt(v,dp){return v==null?"—":v.toFixed(dp);}
+
+function makeRecordForProject(project,type,pointId,sampleId,depthFt){
+  const prefix={MoistureDensity:"md",DirectShear:"ds",Consolidation:"con",DesignShear:"design-shear",DesignConsolidation:"design-con"}[type];
+  const clientRecordId=(type==="DesignShear"||type==="DesignConsolidation")?prefix:newClientRecordId(prefix);
+  return {recordKey:recordKeyForProject(project,clientRecordId),clientRecordId:clientRecordId,recordType:type,
+    pointId:pointId||"",sampleId:sampleId||"",depthFt:depthFt==null?null:depthFt,payload:{},
+    revision:null,sourceHash:"",recordedAt:"",_dirty:true,_localOnly:true};
+}
+function makeRecord(type,pointId,sampleId,depthFt){return makeRecordForProject(currentProject(),type,pointId,sampleId,depthFt);}
+function sourceFieldValue(record,field){
+  if(!record||!record.payload)return null;
+  const value=record.payload[field];
+  if(field==="collapsePotential")return value===true||value===false?value:null;
+  return num(value);
+}
+function invalidateDependentDesigns(sourceKey,project){
+  project=project||currentProject();
+  const source=recordByKey(sourceKey,project);
+  recordsForProject(project).forEach(d=>{
+    if(d.recordType!=="DesignShear"&&d.recordType!=="DesignConsolidation")return;
+    const fields=(d.payload&&d.payload.fields)||{};let changed=false;
+    Object.keys(fields).forEach(name=>{
+      const selected=fields[name];if(selected.sourceRecordKey!==sourceKey)return;
+      const next=sourceFieldValue(source,selected.sourceField);
+      if(next===null||(source.recordType==="Consolidation"&&source.payload.entryMode==="graph_only"))delete fields[name];
+      else{selected.value=next;selected.provenance=recordProvenance(source);}
+      changed=true;
+    });
+    if(changed){d.payload.tedConfirmed=false;d.payload.confirmedBy="";d._dirty=true;}
+  });
+}
+function invalidateLegacyForSample(s){
+  sampleRecords(s,"MoistureDensity").filter(r=>r.payload&&r.payload.readOnlyLegacy).forEach(r=>invalidateDependentDesigns(r.recordKey));
+}
+function mAndDRecordsForProject(project,s){return recordsForProject(project).filter(r=>r.recordType==="MoistureDensity"&&mAndDMatches(r,s));}
+function ensureMAndDRecordForProject(project,s){
+  let record=mAndDRecordsForProject(project,s).find(r=>!(r.payload&&r.payload.readOnlyLegacy));
+  if(!record){
+    record=makeRecordForProject(project,"MoistureDensity",s.pointId,s.sampleId,num(s.depth));
+    recordsForProject(project).push(record);
+    mAndDRecordsForProject(project,s).filter(r=>r.payload&&r.payload.readOnlyLegacy).forEach(r=>invalidateDependentDesigns(r.recordKey,project));
+  }
+  return record;
+}
+function ensureMAndDRecord(s){return ensureMAndDRecordForProject(currentProject(),s);}
+function syncSampleMAndDRecordForProject(project,s){
+  const r=ensureMAndDRecordForProject(project,s),c=computeSample(s);
+  const round4=v=>v==null?null:Math.round(v*10000)/10000;
+  r.pointId=String(s.pointId||"");r.sampleId=String(s.sampleId||"");r.depthFt=num(s.depth);
+  r.payload={
+    ringCount:s.rings,ringWeightG:constNum(s.ringWt,state.defaultRingWt),ringVolumeCc:constNum(s.ringVol,state.defaultRingVol),
+    dishWeightG:constNum(s.tareWt,state.defaultTareWt),wetSoilRingsG:s.wetRingWt,wetSoilDishG:s.wetTareWt,
+    drySoilDishG:s.dryTareWt,moisturePct:round4(c.moisturePct),wetDensityPcf:round4(c.wetDensity),
+    dryDensityPcf:round4(c.dryDensity),uscs:s.uscs||"",notes:s.notes||""
+  };
+  delete r._projectionRepair;
+  r._dirty=true;s.mdDirty=true;invalidateDependentDesigns(r.recordKey,project);
+  return {record:r,computed:c};
+}
+function syncSampleMAndDRecord(s){return syncSampleMAndDRecordForProject(currentProject(),s);}
+function mAndDStarted(s){
+  return [s.wetRingWt,s.wetTareWt,s.dryTareWt].some(v=>String(v==null?"":v).trim()!=="")||s.mdDirty;
+}
+function validateMAndD(s){
+  const c=computeSample(s),n=num(s.rings),ring=constNum(s.ringWt,state.defaultRingWt),vol=constNum(s.ringVol,state.defaultRingVol),dish=constNum(s.tareWt,state.defaultTareWt);
+  if(!s.pointId||String(s.sampleId||"")===""||num(s.depth)===null)throw new Error("M&D requires point, sample, and depth.");
+  if(!s.ringsExplicit||!Number.isInteger(n)||n<=0)throw new Error((s.pointId||"?")+" / S"+(s.sampleId||"?")+": enter the actual positive integer ring count.");
+  if(ring===null||ring<=0||vol===null||vol<=0||dish===null||dish<0)throw new Error("Check the ring/dish constants before syncing M&D.");
+  if(num(s.wetRingWt)===null||num(s.wetTareWt)===null||num(s.dryTareWt)===null||c.moisturePct===null||c.dryDensity===null)throw new Error((s.pointId||"?")+" / S"+(s.sampleId||"?")+": all three weights must form a valid M&D result.");
+}
+
+function addSampleTest(i,type){
+  const s=projSamples()[i];if(!s)return;
+  if(!s.pointId||String(s.sampleId||"")===""||num(s.depth)===null){alert("Enter point, sample, and depth before adding a test.");return;}
+  const r=makeRecord(type,String(s.pointId),String(s.sampleId),num(s.depth));
+  r.payload=type==="DirectShear"?{sourceReportProjectNumber:"",sourceReportIdentity:"",specimenRef:"",sourcePage:"",projectMismatchConfirmed:false,projectMismatchConfirmedFor:"",projectMismatchConfirmedSource:"",projectMappingNote:"",cohesionPsf:"",frictionAngleDeg:"",dryDensityPcf:"",saturatedMoisturePct:"",saturatedDensityPcf:"",specificGravity:"",notes:""}:
+    {sourceReportProjectNumber:"",sourceReportIdentity:"",specimenRef:"",sourcePage:"",projectMismatchConfirmed:false,projectMismatchConfirmedFor:"",projectMismatchConfirmedSource:"",projectMappingNote:"",entryMode:"graph_only",ccPctLog:"",crPctLog:"",collapseStrainPct:"",collapsePotential:null,notes:""};
+  registerRecords().push(r);save();render();
+}
+function updateRecordField(key,field,value,kind){
+  const r=recordByKey(key);if(!r||r.payload&&r.payload.readOnlyLegacy)return;
+  if(kind==="bool")value=!!value;
+  if(kind==="nullableBool")value=value==="true"?true:value==="false"?false:null;
+  r.payload[field]=value;
+  if(field==="sourceReportProjectNumber"||field==="sourceReportIdentity"){
+    r.payload.projectMismatchConfirmed=false;r.payload.projectMismatchConfirmedFor="";r.payload.projectMismatchConfirmedSource="";r.payload.projectMappingNote="";
+  }
+  if(field==="projectMismatchConfirmed"){
+    r.payload.projectMismatchConfirmedFor=value?String(r.payload.sourceReportProjectNumber||"").trim():"";
+    r.payload.projectMismatchConfirmedSource=value?String(r.payload.sourceReportIdentity||"").trim():"";
+  }
+  if(r.recordType==="Consolidation"&&field==="entryMode"&&value==="graph_only"){
+    r.payload.ccPctLog="";r.payload.crPctLog="";r.payload.collapseStrainPct="";r.payload.collapsePotential=null;
+  }
+  r._dirty=true;invalidateDependentDesigns(key);save();render();
+}
+function removeUnsyncedRecord(key){
+  const i=registerRecords().findIndex(r=>r.recordKey===key);if(i<0||registerRecords()[i].revision)return;
+  registerRecords().splice(i,1);invalidateDependentDesigns(key);save();render();
+}
+
+const DESIGN_FIELDS={
+  DesignShear:[
+    ["cohesionPsf","Design cohesion c (psf)"],["frictionAngleDeg","Design friction angle φ (deg)"],
+    ["dryDensityPcf","Dry density (pcf)"],["saturatedMoisturePct","Saturated moisture (%)"],
+    ["saturatedDensityPcf","Saturated density (pcf)"],["specificGravity","Specific gravity Gs"]
+  ],
+  DesignConsolidation:[
+    ["ccPctLog","Cc (%/log cycle)"],["crPctLog","Cr (%/log cycle)"],
+    ["collapseStrainPct","Collapse strain (%)"],["collapsePotential","Collapse/hydrocompression suspected"]
+  ]
+};
+function designRecord(type,create){
+  const expectedId=type==="DesignShear"?"design-shear":"design-con",expectedKey=recordKeyFor(expectedId);
+  let matches=registerRecords().filter(r=>r.recordType===type),canonical=matches.find(r=>r.recordKey===expectedKey)||null;
+  const noncanonical=matches.filter(r=>r.recordKey!==expectedKey);
+  if(noncanonical.some(r=>r.revision))throw new Error("Saved noncanonical "+type+" identity requires register review.");
+  if(noncanonical.length>1)throw new Error("More than one unsynced "+type+" draft exists locally.");
+  if(noncanonical.length===1){
+    const draft=noncanonical[0];
+    if(canonical){canonical.payload=draft.payload;canonical._dirty=true;registerRecords().splice(registerRecords().indexOf(draft),1);}
+    else{draft.clientRecordId=expectedId;draft.recordKey=expectedKey;canonical=draft;}
+  }
+  if(canonical&&canonical.payload&&canonical.payload.fields){
+    Object.keys(canonical.payload.fields).forEach(field=>{
+      const item=canonical.payload.fields[field];
+      if(Number.isInteger(item.sourceRevision)&&typeof item.sourceHash==="string")return;
+      const source=recordByKey(item.sourceRecordKey);
+      item.sourceRevision=source&&Number.isInteger(source.revision)?source.revision:0;
+      item.sourceHash=source&&source.sourceHash?source.sourceHash:"";
+      canonical.payload.tedConfirmed=false;canonical.payload.confirmedBy="";canonical._dirty=true;
+    });
+  }
+  if(canonical||!create)return canonical;
+  const r=makeRecord(type,"","",null);r.payload={tedConfirmed:false,confirmedBy:"",fields:{},notes:""};registerRecords().push(r);return r;
+}
+function startDesign(type){try{designRecord(type,true);save();render();}catch(e){alert(e.message);}}
+function designCandidates(type,field){
+  return registerRecords().filter(r=>{
+    if(type==="DesignConsolidation")return r.recordType==="Consolidation"&&r.payload.entryMode!=="graph_only";
+    if(field==="dryDensityPcf")return r.recordType==="MoistureDensity"||r.recordType==="DirectShear";
+    return r.recordType==="DirectShear";
+  }).map(r=>({record:r,value:sourceFieldValue(r,field)})).filter(x=>x.value!==null);
+}
+function setDesignSource(type,field,key){
+  const d=designRecord(type,true);d.payload.fields=d.payload.fields||{};
+  if(!key)delete d.payload.fields[field];
+  else{
+    const source=recordByKey(key),value=sourceFieldValue(source,field);
+    if(!source||value===null){alert("That factual source has no reported "+field+" value.");return;}
+    d.payload.fields[field]={value:value,sourceRecordKey:key,sourceField:field,provenance:recordProvenance(source),
+      sourceRevision:Number.isInteger(source.revision)?source.revision:0,sourceHash:source.sourceHash||""};
+  }
+  d.payload.tedConfirmed=false;d.payload.confirmedBy="";d._dirty=true;save();render();
+}
+function setDesignConfirmed(type,checked){
+  const d=designRecord(type,true),fields=d.payload.fields||{};
+  if(checked&&!Object.keys(fields).length){alert("Select at least one factual source first.");render();return;}
+  d.payload.tedConfirmed=!!checked;d.payload.confirmedBy=checked?"Ted":"";d._dirty=true;save();render();
+}
+function updateDesignNotes(type,value){const d=designRecord(type,true);d.payload.notes=value;d.payload.tedConfirmed=false;d.payload.confirmedBy="";d._dirty=true;save();render();}
+function candidateLabel(c,field){
+  const r=c.record,p=r.payload||{},value=field==="collapsePotential"?(c.value?"reported yes":"reported no"):String(c.value);
+  return (r.pointId||"project")+" / S"+(r.sampleId||"—")+(r.depthFt!=null?" @ "+r.depthFt+" ft":"")+" — "+value+" — "+(p.sourceReportIdentity||p.provenance||r.recordType);
+}
+function renderDesign(type,title){
+  let d=null;try{d=designRecord(type,false);}catch(e){return '<div class="panel"><div class="guard">'+esc(e.message)+'</div></div>';}
+  if(!d)return '<div class="panel"><h2>'+esc(title)+'</h2><p class="status">Create a project-level, field-by-field selection only after reviewing factual records.</p><button class="btn-secondary" onclick="startDesign(\''+type+'\')">Start '+esc(title)+'</button></div>';
+  const fields=d.payload.fields||{};
+  const rows=DESIGN_FIELDS[type].map(spec=>{
+    const field=spec[0],label=spec[1],selected=fields[field]&&fields[field].sourceRecordKey||"",candidates=designCandidates(type,field);
+    const options=candidates.map(c=>'<option value="'+esc(c.record.recordKey)+'"'+(selected===c.record.recordKey?' selected':'')+'>'+esc(candidateLabel(c,field))+'</option>').join("");
+    const current=fields[field];
+    return '<div><label>'+esc(label)+'</label><select class="source-select" onchange="setDesignSource(\''+type+'\',\''+field+'\',this.value)"><option value="">— select exact factual source —</option>'+options+'</select>'+
+      (current?'<div class="record-meta">Exact value '+esc(String(current.value))+' · '+esc(current.provenance)+'</div>':'')+'</div>';
+  }).join("");
+  return '<div class="panel"><h2>'+esc(title)+'</h2><div class="test design"><div class="guard">No minimum, maximum, first, or latest result is selected automatically. Every field below requires Ted’s choice.</div><div class="grid2">'+rows+'</div>'+
+    '<label>Selection notes</label><textarea rows="2" onchange="updateDesignNotes(\''+type+'\',this.value)">'+esc(d.payload.notes||"")+'</textarea>'+
+    '<label class="checkline"><input type="checkbox" '+(d.payload.tedConfirmed?'checked':'')+' onchange="setDesignConfirmed(\''+type+'\',this.checked)"> I am Ted and I confirm these field-by-field design selections for this project.</label>'+
+    '<div class="record-meta">'+esc(d.recordKey)+' · '+(d.revision?'saved revision '+d.revision:(d._dirty?'unsynced':'local'))+'</div></div></div>';
+}
+function renderDesignPanel(){
+  const el=document.getElementById("designPanel");if(!el)return;
+  if(!currentProject()){el.innerHTML="";return;}
+  el.innerHTML=renderDesign("DesignShear","Ted-approved shear design inputs")+renderDesign("DesignConsolidation","Ted-approved consolidation design inputs");
+}
+
+function sourceIdentityEditor(r){
+  const p=r.payload||{},mismatch=String(p.sourceReportProjectNumber||"").trim()&&String(p.sourceReportProjectNumber).trim()!==currentProject();
+  return '<div class="grid2"><div><label>Printed project number</label><input value="'+esc(p.sourceReportProjectNumber||"")+'" placeholder="Enter exactly as printed" onchange="updateRecordField(\''+r.recordKey+'\',\'sourceReportProjectNumber\',this.value)"></div>'+
+    '<div><label>Source report / file identity</label><input value="'+esc(p.sourceReportIdentity||"")+'" placeholder="e.g. IV-1 - Direct Shear.pdf" onchange="updateRecordField(\''+r.recordKey+'\',\'sourceReportIdentity\',this.value)"></div>'+
+    '<div><label>Specimen reference</label><input value="'+esc(p.specimenRef||"")+'" placeholder="e.g. TP-4 at 2 ft" onchange="updateRecordField(\''+r.recordKey+'\',\'specimenRef\',this.value)"></div>'+
+    '<div><label>Source page</label><input value="'+esc(p.sourcePage||"")+'" placeholder="e.g. 1" onchange="updateRecordField(\''+r.recordKey+'\',\'sourcePage\',this.value)"></div></div>'+
+    (mismatch?'<div class="guard">Printed project '+esc(p.sourceReportProjectNumber)+' does not match selected project '+esc(currentProject())+'. Sync is blocked unless Ted explicitly maps it.</div><label class="checkline"><input type="checkbox" '+(p.projectMismatchConfirmed?'checked':'')+' onchange="updateRecordField(\''+r.recordKey+'\',\'projectMismatchConfirmed\',this.checked,\'bool\')"> Ted confirms this source belongs to the selected project despite the mismatch.</label><label>Required project mapping note</label><textarea rows="2" onchange="updateRecordField(\''+r.recordKey+'\',\'projectMappingNote\',this.value)">'+esc(p.projectMappingNote||"")+'</textarea>':'');
+}
+function renderDirectShear(r){
+  const p=r.payload||{};
+  const fields=[["cohesionPsf","Cohesion c (psf)"],["frictionAngleDeg","Friction angle φ (deg)"],["dryDensityPcf","Dry density (pcf)"],["saturatedMoisturePct","Saturated moisture (%)"],["saturatedDensityPcf","Saturated density (pcf)"],["specificGravity","Specific gravity Gs (optional)"]];
+  const inputs=fields.map(f=>'<div><label>'+f[1]+'</label><input type="number" step="any" inputmode="decimal" value="'+esc(p[f[0]]==null?"":p[f[0]])+'" onchange="updateRecordField(\''+r.recordKey+'\',\''+f[0]+'\',this.value)"></div>').join("");
+  return '<div class="test"><div class="test-head"><h3>Direct shear — factual specimen result</h3>'+(r.revision?'':'<button class="btn-ghost mini del" onclick="removeUnsyncedRecord(\''+r.recordKey+'\')">Remove</button>')+'</div>'+sourceIdentityEditor(r)+'<div class="grid3">'+inputs+'</div><label>Notes</label><textarea rows="2" onchange="updateRecordField(\''+r.recordKey+'\',\'notes\',this.value)">'+esc(p.notes||"")+'</textarea><div class="record-meta">'+esc(r.recordKey)+' · '+(r.revision?'saved revision '+r.revision:(r._dirty?'unsynced':'local'))+'</div></div>';
+}
+function renderConsolidation(r){
+  const p=r.payload||{},graph=p.entryMode==="graph_only";
+  return '<div class="test graph"><div class="test-head"><h3>Consolidation — factual specimen result</h3>'+(r.revision?'':'<button class="btn-ghost mini del" onclick="removeUnsyncedRecord(\''+r.recordKey+'\')">Remove</button>')+'</div>'+sourceIdentityEditor(r)+'<label>Entry mode</label><select onchange="updateRecordField(\''+r.recordKey+'\',\'entryMode\',this.value)"><option value="graph_only"'+(graph?' selected':'')+'>Graph only — no numeric interpretation</option><option value="numeric"'+(!graph?' selected':'')+'>Reported numeric results</option></select>'+
+    (graph?'<div class="guard">Graph-only preserves the source without inventing Cc, Cr, collapse strain, or a collapse determination. It supplies no report calculation input.</div>':'<div class="grid3"><div><label>Cc (%/log cycle)</label><input type="number" step="any" value="'+esc(p.ccPctLog==null?"":p.ccPctLog)+'" onchange="updateRecordField(\''+r.recordKey+'\',\'ccPctLog\',this.value)"></div><div><label>Cr (%/log cycle)</label><input type="number" step="any" value="'+esc(p.crPctLog==null?"":p.crPctLog)+'" onchange="updateRecordField(\''+r.recordKey+'\',\'crPctLog\',this.value)"></div><div><label>Collapse strain (%)</label><input type="number" step="any" value="'+esc(p.collapseStrainPct==null?"":p.collapseStrainPct)+'" onchange="updateRecordField(\''+r.recordKey+'\',\'collapseStrainPct\',this.value)"></div></div><label>Reported collapse / hydrocompression determination</label><select onchange="updateRecordField(\''+r.recordKey+'\',\'collapsePotential\',this.value,\'nullableBool\')"><option value=""'+(p.collapsePotential!==true&&p.collapsePotential!==false?' selected':'')+'>Not reported</option><option value="true"'+(p.collapsePotential===true?' selected':'')+'>Reported yes / suspected</option><option value="false"'+(p.collapsePotential===false?' selected':'')+'>Reported no / not suspected</option></select>')+
+    '<label>Notes</label><textarea rows="2" onchange="updateRecordField(\''+r.recordKey+'\',\'notes\',this.value)">'+esc(p.notes||"")+'</textarea><div class="record-meta">'+esc(r.recordKey)+' · '+(r.revision?'saved revision '+r.revision:(r._dirty?'unsynced':'local'))+'</div></div>';
+}
+function renderSampleTests(s,i){
+  const direct=sampleRecords(s,"DirectShear").map(renderDirectShear).join("");
+  const consolidation=sampleRecords(s,"Consolidation").map(renderConsolidation).join("");
+  return '<div class="test-suite"><div class="test-suite-head"><h3>Outsourced lab results</h3><div><button class="btn-secondary mini" onclick="addSampleTest('+i+',\'DirectShear\')">+ Direct shear</button> <button class="btn-secondary mini" onclick="addSampleTest('+i+',\'Consolidation\')">+ Consolidation</button></div></div>'+direct+consolidation+'</div>';
+}
+function legacyMAndDHtml(s){
+  const r=sampleRecords(s,"MoistureDensity").find(x=>x.payload&&x.payload.readOnlyLegacy);if(!r)return"";
+  const p=r.payload;
+  return '<div class="carried"><strong>Carried M&D (read-only)</strong><br>Dry density '+esc(p.dryDensityPcf==null?"not reported":p.dryDensityPcf+" pcf")+' · moisture '+esc(p.moisturePct==null?"not reported":p.moisturePct+" %")+(p.wetDensityPcf==null?'':' · wet density '+esc(p.wetDensityPcf)+' pcf')+'<div class="record-meta">'+esc(p.provenance||r.recordKey)+'</div></div>';
+}
+
+// ── rendering ──
+function render(){
+  const list=document.getElementById("sampleList");
+  const samples=projSamples();
+  document.getElementById("projectManual").value=state.currentProjectManual||document.getElementById("projectManual").value;
+  if(!samples.length){
+    list.innerHTML='<div class="empty">'+(currentProject()?"No samples yet for "+esc(currentProject())+". Load from V2 or add manually.":"Pick a project, then load its field samples or add one manually.")+'</div>';
+    renderDesignPanel();
+    return;
+  }
+  list.innerHTML=samples.map((s,i)=>{
+    const c=computeSample(s);
+    const srcBadge=s.source==="v2"?'<span class="badge v2">FROM V2</span>':'<span class="badge manual">MANUAL</span>';
+    const md=sampleRecords(s,"MoistureDensity").find(r=>!(r.payload&&r.payload.readOnlyLegacy));
+    const syncBadge=md&&md._projectionRepair?'<span class="badge repair">05 PROJECTION REPAIR PENDING</span>':
+      (md&&md.revision&&!md._dirty?'<span class="badge synced">M&amp;D REV '+md.revision+'</span>':"");
+    const identityLocked=s.source==="v2"||relatedFactualRecords(s).some(r=>r.revision);
+    return `<div class="card${s.open?" open":""}" data-i="${i}">
+      <div class="card-head" onclick="toggleCard(${i})">
+        <span class="pid">${esc(s.pointId||"?")} / S${esc(s.sampleId||"?")}</span>
+        <span class="meta">${esc(s.depth!==""&&s.depth!=null?s.depth+" ft":"depth?")} &middot; ${esc(s.type||"type?")}</span>
+        ${srcBadge}${syncBadge}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div><label>Point ID</label><input value="${esc(s.pointId)}" ${identityLocked?"readonly":""} onchange="upd(${i},'pointId',this.value)"></div>
+          <div><label>Sample ID</label><input value="${esc(s.sampleId)}" ${identityLocked?"readonly":""} onchange="upd(${i},'sampleId',this.value)"></div>
+          <div><label>Depth ft</label><input type="number" step="0.5" inputmode="decimal" value="${esc(s.depth)}" ${identityLocked?"readonly":""} onchange="upd(${i},'depth',this.value)"></div>
+          <div><label>Type</label><select onchange="upd(${i},'type',this.value)">${TYPE_OPTIONS.map(t=>`<option${t===s.type?" selected":""}>${t}</option>`).join("")}</select></div>
+        </div>
+        <div class="sec">
+          <h3 class="h-manual">Bench weights <span class="tag">(manual — grams, 3 entries + ring count)</span></h3>
+          <div class="row">
+            <div style="flex:0 0 72px;"><label>Rings (#)</label><input type="number" step="1" min="1" inputmode="numeric" value="${esc(s.rings)}" onchange="upd(${i},'rings',this.value)"></div>
+            <div><label>Wet soil + rings (g)</label><input type="number" step="0.01" inputmode="decimal" value="${esc(s.wetRingWt)}" onchange="upd(${i},'wetRingWt',this.value)"></div>
+            <div><label>Wet soil + dish (g)</label><input type="number" step="0.01" inputmode="decimal" value="${esc(s.wetTareWt)}" onchange="upd(${i},'wetTareWt',this.value)"></div>
+            <div><label>Dry soil + dish (g)</label><input type="number" step="0.01" inputmode="decimal" value="${esc(s.dryTareWt)}" onchange="upd(${i},'dryTareWt',this.value)"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">
+            Using constants: ring ${esc(constNum(s.ringWt,state.defaultRingWt)??"?")} g each ·
+            volume ${esc(constNum(s.ringVol,state.defaultRingVol)??"?")} cc each ·
+            dish ${esc(constNum(s.tareWt,state.defaultTareWt)??"?")} g
+            <span style="opacity:.7;">(set in the Project panel)</span>
+          </div>
+          ${!s.ringsExplicit?'<div class="guard">Ring count is intentionally blank/unconfirmed. Enter or re-enter the actual Rings/SPT Number; the app never assumes 1.</div>':''}
+        </div>
+        ${legacyMAndDHtml(s)}
+        <div class="sec derived">
+          <h3 class="h-derived">Computed <span class="tag">(automatic)</span></h3>
+          <div class="outgrid">
+            <div class="outbox"><div class="val${c.moisturePct==null?" blank":""}">${fmt(c.moisturePct,1)}</div><div class="lab">Moisture %</div></div>
+            <div class="outbox"><div class="val${c.wetDensity==null?" blank":""}">${fmt(c.wetDensity,1)}</div><div class="lab">Wet density pcf</div></div>
+            <div class="outbox"><div class="val${c.dryDensity==null?" blank":""}">${fmt(c.dryDensity,1)}</div><div class="lab">Dry density pcf</div></div>
+          </div>
+          ${c.waterWt!=null?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">Water ${c.waterWt.toFixed(1)} g · dry soil ${c.drySoilWt.toFixed(1)} g</div>`:''}
+          ${(c.wetDensity!=null&&(c.wetDensity>150||c.wetDensity<50))||(c.moisturePct!=null&&c.moisturePct>60)?
+            '<div style="font-size:11px;color:var(--warn);margin-top:6px;">⚠ Outside the plausible range for soil — check the weights, ring count, and constants before syncing.</div>':''}
+        </div>
+        <div class="row">
+          <div><label>Visual classification (USCS)</label><select onchange="upd(${i},'uscs',this.value)">${USCS_OPTIONS.map(u=>`<option value="${u}"${u===s.uscs?" selected":""}>${u||"—"}</option>`).join("")}</select></div>
+        </div>
+        <label>Notes / description</label>
+        <textarea rows="2" onchange="upd(${i},'notes',this.value)">${esc(s.notes)}</textarea>
+        ${renderSampleTests(s,i)}
+        <div class="card-actions">
+          <button class="btn-ghost del" onclick="delSample(${i})">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+  renderDesignPanel();
+}
+
+function toggleCard(i){const s=projSamples()[i];if(s){s.open=!s.open;save();render();}}
+function upd(i,field,value){
+  const s=projSamples()[i];if(!s)return;
+  const old={pointId:s.pointId,sampleId:s.sampleId,depth:s.depth};
+  if(["pointId","sampleId","depth"].includes(field)&&(s.source==="v2"||relatedFactualRecords(s).some(r=>r.revision))){
+    alert("Saved/V2 sample identity is locked. Add a new factual record instead of rekeying an append-only identity.");render();return;
+  }
+  s[field]=value;
+  if(["pointId","sampleId","depth"].includes(field)&&s.pointId&&String(s.sampleId||"")!==""){
+    const duplicate=projSamples().some((x,j)=>j!==i&&String(x.pointId||"").trim().toUpperCase()===String(s.pointId).trim().toUpperCase()&&String(x.sampleId||"").trim().toUpperCase()===String(s.sampleId).trim().toUpperCase()&&num(x.depth)!==num(s.depth));
+    if(duplicate){s[field]=old[field];alert("That point/sample already exists at a conflicting depth. The depthless 05 key permits only one M&D identity.");render();return;}
+  }
+  if(field==="rings")s.ringsExplicit=true;
+  if(["pointId","sampleId","depth"].includes(field)){
+    registerRecords().filter(r=>["MoistureDensity","DirectShear","Consolidation"].includes(r.recordType)&&(r.recordType==="MoistureDensity"?mAndDMatches(r,old):sampleMatches(r,old))&&!(r.payload&&r.payload.readOnlyLegacy)).forEach(r=>{
+      r.pointId=String(s.pointId||"");r.sampleId=String(s.sampleId||"");r.depthFt=num(s.depth);r._dirty=true;invalidateDependentDesigns(r.recordKey);
+    });
+  }
+  if(["rings","wetRingWt","wetTareWt","dryTareWt","uscs","notes"].includes(field))syncSampleMAndDRecord(s);
+  s.syncedAt="";
+  save();render();
+}
+function delSample(i){
+  const s=projSamples()[i];if(!s)return;
+  const related=registerRecords().filter(r=>["MoistureDensity","DirectShear","Consolidation"].includes(r.recordType)&&(r.recordType==="MoistureDensity"?mAndDMatches(r,s):sampleMatches(r,s)));
+  const drafts=related.filter(r=>!r.revision),saved=related.filter(r=>r.revision);
+  const message="Remove sample "+(s.pointId||"?")+" / S"+(s.sampleId||"?")+" from this device? "+
+    drafts.length+" unsynced factual draft(s) will be discarded."+
+    (saved.length?" "+saved.length+" saved append-only record(s) will remain and reappear when the project is reloaded.":"")+" This does not delete V2 data.";
+  if(!confirm(message))return;
+  projectRegister().records=registerRecords().filter(r=>!drafts.includes(r));
+  drafts.forEach(r=>invalidateDependentDesigns(r.recordKey));
+  projSamples().splice(i,1);save();render();
+}
+
+function ensureSampleForRecord(r){
+  if(!["MoistureDensity","DirectShear","Consolidation"].includes(r.recordType))return null;
+  let s=projSamples().find(x=>r.recordType==="MoistureDensity"?mAndDMatches(r,x):sampleMatches(r,x));
+  if(!s){
+    s={pointId:r.pointId,sampleId:r.sampleId,depth:r.depthFt==null?"":r.depthFt,type:"Ring",source:"register",rings:"",ringsExplicit:false,ringWt:"",wetRingWt:"",ringVol:"",tareWt:"",wetTareWt:"",dryTareWt:"",uscs:"",notes:"",syncedAt:"",mdDirty:false,open:false};
+    projSamples().push(s);
+  }
+  return s;
+}
+function applyRegisterToSamples(){
+  registerRecords().forEach(r=>{
+    const s=ensureSampleForRecord(r);if(!s||r.recordType!=="MoistureDensity")return;
+    const p=r.payload||{};
+    if(p.readOnlyLegacy){s.syncedAt="prior";return;}
+    if(r._dirty)return;
+    s.rings=String(p.ringCount==null?"":p.ringCount);s.ringsExplicit=p.ringCount!=null;
+    s.ringWt=String(p.ringWeightG==null?"":p.ringWeightG);s.ringVol=String(p.ringVolumeCc==null?"":p.ringVolumeCc);s.tareWt=String(p.dishWeightG==null?"":p.dishWeightG);
+    s.wetRingWt=String(p.wetSoilRingsG==null?"":p.wetSoilRingsG);s.wetTareWt=String(p.wetSoilDishG==null?"":p.wetSoilDishG);s.dryTareWt=String(p.drySoilDishG==null?"":p.drySoilDishG);
+    s.uscs=p.uscs||"";s.notes=p.notes||"";s.mdDirty=false;s.syncedAt=r.recordedAt||"saved";
+  });
+}
+function mergeRegisterSnapshot(snapshot,acceptedKeys){
+  const accepted=new Set(acceptedKeys||[]),reg=projectRegister(),local=new Map(reg.records.map(r=>[r.recordKey,r]));
+  const merged=snapshot.records.map(server=>{
+    const prior=local.get(server.recordKey);
+    if(prior&&prior._dirty&&!accepted.has(server.recordKey))return prior;
+    return Object.assign({},server,{_dirty:false,_localOnly:false});
+  });
+  const serverKeys=new Set(snapshot.records.map(r=>r.recordKey));
+  reg.records.forEach(r=>{if(r._dirty&&!serverKeys.has(r.recordKey))merged.push(r);});
+  reg.records=merged;reg.snapshotHash=snapshot.snapshotHash;reconcilePreservedDesignsAfterSnapshot();applyRegisterToSamples();
+  accepted.forEach(key=>{
+    const r=recordByKey(key);if(r&&r.recordType==="MoistureDensity"){
+      const s=projSamples().find(x=>mAndDMatches(r,x));if(s)s.mdDirty=false;
+    }
+  });
+}
+function reconcilePreservedDesignsAfterSnapshot(){
+  registerRecords().filter(d=>d.recordType==="DesignShear"||d.recordType==="DesignConsolidation").forEach(d=>{
+    const fields=(d.payload&&d.payload.fields)||{};let changed=false;
+    Object.keys(fields).forEach(field=>{
+      const selection=fields[field],source=recordByKey(selection.sourceRecordKey);
+      const typeAllowed=d.recordType==="DesignConsolidation"
+        ? source&&source.recordType==="Consolidation"&&source.payload.entryMode!=="graph_only"
+        : field==="dryDensityPcf"
+          ? source&&(source.recordType==="MoistureDensity"||source.recordType==="DirectShear")
+          : source&&source.recordType==="DirectShear";
+      const nextValue=typeAllowed&&selection.sourceField===field?sourceFieldValue(source,field):null;
+      if(nextValue===null){delete fields[field];changed=true;return;}
+      const nextProvenance=recordProvenance(source),sourceIsDirty=!!source._dirty;
+      const nextRevision=sourceIsDirty?selection.sourceRevision:(Number.isInteger(source.revision)?source.revision:0);
+      const nextHash=sourceIsDirty?selection.sourceHash:(source.sourceHash||"");
+      if(selection.value!==nextValue||selection.provenance!==nextProvenance||selection.sourceRevision!==nextRevision||selection.sourceHash!==nextHash){
+        selection.value=nextValue;selection.provenance=nextProvenance;selection.sourceRevision=nextRevision;selection.sourceHash=nextHash;changed=true;
+      }
+      if(sourceIsDirty)changed=true;
+    });
+    if(changed){d.payload.tedConfirmed=false;d.payload.confirmedBy="";d._dirty=true;}
+  });
+}
+function serverReconciliationKeys(snapshot){
+  const localByKey=new Map(projectRegister().records.map(r=>[r.recordKey,r]));
+  return (snapshot.records||[]).filter(server=>{
+    const local=localByKey.get(server.recordKey);if(!local||!local._dirty)return false;
+    if(!Number.isInteger(local.revision)||local.revision<1)return true;
+    return server.revision!==local.revision||server.sourceHash!==local.sourceHash;
+  }).map(r=>r.recordKey);
+}
+function mergeFieldSamples(rows){
+  const existing=projSamples(),draft=existing.map(sample=>Object.assign({},sample));let added=0,updated=0;
+  const incomingIdentity={};
+  (rows||[]).forEach(v=>{
+    const semantic=identityPart(v.pointId)+"|"+identityPart(v.sampleId);
+    if(incomingIdentity[semantic]!==undefined){
+      if(incomingIdentity[semantic]!==num(v.depth))throw new Error("Incoming field samples conflict on depth for "+v.pointId+" / S"+v.sampleId+".");
+      throw new Error("Incoming field samples duplicate "+v.pointId+" / S"+v.sampleId+".");
+    }
+    incomingIdentity[semantic]=num(v.depth);
+    const conflict=draft.find(x=>identityPart(x.pointId)===identityPart(v.pointId)&&identityPart(x.sampleId)===identityPart(v.sampleId)&&num(x.depth)!==num(v.depth));
+    if(conflict)throw new Error("Conflicting depths for "+v.pointId+" / S"+v.sampleId+"; 05_Lab_Results uses a depthless key.");
+    let s=draft.find(x=>identityPart(x.pointId)===identityPart(v.pointId)&&identityPart(x.sampleId)===identityPart(v.sampleId)&&num(x.depth)===num(v.depth));
+    if(s){s.depth=v.depth;s.type=s.type||v.type;s.source="v2";s.hasLabRow=!!v.hasLabRow;s.labDryDensityPcf=v.labDryDensityPcf;s.labMoisturePct=v.labMoisturePct;if(!s.ringsExplicit&&v.ringsSpt!==""&&v.ringsSpt!=null){s.rings=String(v.ringsSpt);s.ringsExplicit=true;}updated++;}
+    else{draft.push({pointId:v.pointId,sampleId:v.sampleId,depth:v.depth,type:v.type||"Ring",source:"v2",rings:v.ringsSpt==null?"":String(v.ringsSpt),ringsExplicit:v.ringsSpt!==""&&v.ringsSpt!=null,ringWt:"",wetRingWt:"",ringVol:"",tareWt:"",wetTareWt:"",dryTareWt:"",uscs:v.uscs||"",notes:v.notes||"",syncedAt:"",mdDirty:false,hasLabRow:!!v.hasLabRow,labDryDensityPcf:v.labDryDensityPcf,labMoisturePct:v.labMoisturePct,open:false});added++;}
+  });
+  existing.splice(0,existing.length,...draft);
+  return {added:added,updated:updated};
+}
+
+// Detect the narrow split-commit case where the append-only register is saved
+// but the mutable 05_Lab_Results projection was not.  This marks the exact
+// canonical record for an idempotent replay; it does not create a new semantic
+// revision or invalidate Ted's design selections.
+function markMAndDProjectionRepairs(projectionRows,hasWetDensity){
+  const rows=projectionRows||[],project=currentProject();
+  const near=(actual,expected)=>num(actual)!==null&&Math.abs(num(actual)-expected)<0.000001;
+  let repairs=0;
+  registerRecords().filter(r=>r.recordType==="MoistureDensity"&&r.revision&&!(r.payload&&r.payload.readOnlyLegacy)).forEach(r=>{
+    const p=r.payload||{},expectedAppKey=project+"_"+r.pointId+"_LAB"+r.sampleId;
+    const candidates=rows.filter(row=>((row.projectNumber===project||!Object.prototype.hasOwnProperty.call(row,"projectNumber"))&&
+      identityPart(row.pointId)===identityPart(r.pointId)&&identityPart(row.sampleId)===identityPart(r.sampleId))||
+      row.labResultAppKey===expectedAppKey);
+    const projected=candidates.length===1?candidates[0]:null;
+    const full=!!projected&&Object.prototype.hasOwnProperty.call(projected,"labResultAppKey");
+    let matches=false;
+    if(full){
+      matches=projected.labResultAppKey===expectedAppKey&&projected.projectNumber===project&&
+        projected.pointId===r.pointId&&projected.sampleId===r.sampleId&&
+        near(projected.depthFt,Number(r.depthFt))&&
+        near(projected.dryDensityPcf,Math.round(Number(p.dryDensityPcf)*10)/10)&&
+        near(projected.moistureFraction,Math.round(Number(p.moisturePct)/100*1000000)/1000000)&&
+        String(projected.uscs||"")===String(p.uscs||"")&&String(projected.notes||"")===String(p.notes||"")&&
+        projected.pointKey===project+"|"+r.pointId&&
+        projected.sampleKey===project+"|"+r.pointId+"|"+r.sampleId&&
+        (!hasWetDensity||near(projected.wetDensityPcf,Math.round(Number(p.wetDensityPcf)*10)/10));
+    }else if(projected){
+      // Backward-compatible fallback for a previously deployed bridge that
+      // returned only the two log-preview values.
+      matches=near(projected.labDryDensityPcf,Math.round(Number(p.dryDensityPcf)*10)/10)&&
+        near(projected.labMoisturePct,Math.round(Number(p.moisturePct)*10)/10);
+    }
+    if(!matches&&!r._dirty){r._dirty=true;r._projectionRepair=true;repairs++;}
+    else if(matches&&r._projectionRepair){delete r._projectionRepair;r._dirty=false;}
+  });
+  return repairs;
+}
+
+// ── project loading ──
+document.getElementById("btnLoadProjects").onclick=async function(){
+  setStatus("projStatus","Loading projects…");
+  try{
+    const projects=await labBridge("getProjects");
+    state.projects=projects||[];
+    save();fillProjects();
+    setStatus("projStatus",(state.projects.length)+" project(s) loaded.","ok");
+  }catch(err){setStatus("projStatus","Load failed: "+err.message,"err");}
+};
+function fillProjects(){
+  const sel=document.getElementById("projectSelect");
+  const cur=state.currentProject;
+  sel.innerHTML='<option value="">— load or type a project —</option>'+
+    (state.projects||[]).map(p=>`<option value="${esc(p.id)}"${p.id===cur?" selected":""}>${esc(p.id)} — ${esc(p.address||"")}</option>`).join("");
+}
+document.getElementById("projectSelect").onchange=function(){
+  projectRequestSeq++;
+  state.currentProject=this.value;
+  if(this.value){state.currentProjectManual="";document.getElementById("projectManual").value="";}
+  save();render();
+};
+document.getElementById("projectManual").onchange=function(){
+  projectRequestSeq++;
+  state.currentProjectManual=this.value.trim();
+  if(state.currentProjectManual){state.currentProject="";document.getElementById("projectSelect").value="";}
+  save();render();
+};
+function labConstantChanged(){
+  Object.keys(state.samples).forEach(project=>{
+    (state.samples[project]||[]).forEach(s=>{
+      if(mAndDStarted(s)){s.mdDirty=true;syncSampleMAndDRecordForProject(project,s);}
+    });
+  });
+  save();render();
+}
+document.getElementById("defaultRingVol").onchange=function(){
+  state.defaultRingVol=this.value;labConstantChanged();
+};
+document.getElementById("defaultRingWt").onchange=function(){
+  state.defaultRingWt=this.value;labConstantChanged();
+};
+document.getElementById("defaultTareWt").onchange=function(){
+  state.defaultTareWt=this.value;labConstantChanged();
+};
+document.getElementById("writeSecret").onchange=function(){
+  if(this.value)sessionStorage.setItem(WRITE_SECRET_SESSION_KEY,this.value);
+  else sessionStorage.removeItem(WRITE_SECRET_SESSION_KEY);
+};
+
+// ── project samples + canonical lab register ──
+document.getElementById("btnLoadSamples").onclick=async function(){
+  const proj=currentProject();
+  const requestSeq=++projectRequestSeq;
+  if(!proj){setStatus("projStatus","Pick or type a project first.","err");return;}
+  setStatus("projStatus","Loading field samples and verified lab register for "+proj+"…");
+  try{
+    const pair=await Promise.all([labBridge("listFieldSamples",{projectNumber:proj}),labBridge("getLabRegister",{projectNumber:proj})]);
+    const res=pair[0],snapshot=pair[1];
+    await verifySnapshot(snapshot,proj);
+    if(projectRequestSeq!==requestSeq||currentProject()!==proj)throw new Error("Project changed while loading; the old response was discarded.");
+    const reconciliation=serverReconciliationKeys(snapshot),accepted=[];
+    if(reconciliation.length&&confirm("The server now has saved/newer revisions for "+reconciliation.length+" dirty local record(s). This can happen after a committed sync response was lost. Replace those local copies with the verified server revisions? Cancel keeps the local drafts."))accepted.push(...reconciliation);
+    const counts=mergeFieldSamples(res.samples||[]);
+    mergeRegisterSnapshot(snapshot,accepted);
+    const projectionRows=Array.isArray(res.labProjectionRows)?res.labProjectionRows:
+      (res.samples||[]).filter(sample=>sample.hasLabRow);
+    const projectionRepairs=markMAndDProjectionRepairs(projectionRows,!!res.labProjectionHasWetDensity);
+    save();render();
+    setStatus("projStatus","Verified "+snapshot.records.length+" lab record(s); samples: "+counts.added+" added, "+counts.updated+" refreshed."+(accepted.length?" Reconciled "+accepted.length+" previously unacknowledged local record(s).":"")+(projectionRepairs?" "+projectionRepairs+" saved M&D record(s) need 05 projection repair; Sync changed records to repair without a new revision.":""),projectionRepairs?"err":"ok");
+  }catch(err){
+    setStatus("projStatus","Load failed: "+err.message+(String(err.message).indexOf("Unknown action")>=0?" — deploy the four LabBridgeAdditions actions.":""),"err");
+  }
+};
+
+document.getElementById("btnAddManual").onclick=function(){
+  const proj=currentProject();
+  if(!proj){setStatus("projStatus","Pick or type a project first.","err");return;}
+  projSamples().push({
+    pointId:"",sampleId:"",depth:"",type:"Ring",source:"manual",
+    rings:"",ringsExplicit:false,ringWt:"",wetRingWt:"",ringVol:"",
+    tareWt:"",wetTareWt:"",dryTareWt:"",uscs:"",notes:"",syncedAt:"",mdDirty:false,open:true
+  });
+  save();render();
+};
+
+// ── sync + export ──
+function validateFactualRecord(r){
+  const p=r.payload||{};
+  if(!r.pointId||!r.sampleId||num(r.depthFt)===null)throw new Error(r.recordType+" requires point, sample, and depth.");
+  if(r.recordType==="MoistureDensity"){
+    if(r._projectionRepair){
+      if(!Number.isInteger(r.revision)||r.revision<1||!/^[0-9a-f]{64}$/.test(r.sourceHash||""))throw new Error("Projection repair requires a verified saved M&D revision.");
+      return;
+    }
+    const s=projSamples().find(x=>mAndDMatches(r,x));if(!s)throw new Error("M&D sample card is missing for "+r.recordKey+".");validateMAndD(s);syncSampleMAndDRecord(s);return;
+  }
+  if(!String(p.sourceReportProjectNumber||"").trim()||!String(p.sourceReportIdentity||"").trim()||!String(p.specimenRef||"").trim())throw new Error(r.recordType+" requires printed project, source identity, and specimen reference.");
+  if(String(p.sourceReportProjectNumber).trim()!==currentProject()&&(!p.projectMismatchConfirmed||p.projectMismatchConfirmedFor!==String(p.sourceReportProjectNumber).trim()||p.projectMismatchConfirmedSource!==String(p.sourceReportIdentity).trim()||!String(p.projectMappingNote||"").trim()))throw new Error(r.recordType+" project mismatch requires Ted confirmation bound to this exact printed project/source and a mapping note.");
+  if(r.recordType==="DirectShear"){
+    const any=["cohesionPsf","frictionAngleDeg","dryDensityPcf","saturatedMoisturePct","saturatedDensityPcf","specificGravity"].some(f=>num(p[f])!==null);
+    if(!any)throw new Error("DirectShear requires at least one reported numeric result.");
+  }else if(p.entryMode==="graph_only"){
+    p.ccPctLog="";p.crPctLog="";p.collapseStrainPct="";p.collapsePotential=null;
+  }else{
+    const any=["ccPctLog","crPctLog","collapseStrainPct"].some(f=>num(p[f])!==null)||p.collapsePotential===true||p.collapsePotential===false;
+    if(!any)throw new Error("Numeric Consolidation requires at least one reported result or determination.");
+  }
+}
+function dirtyRecordGroups(){
+  projSamples().forEach(s=>{if(mAndDStarted(s)&&s.mdDirty){validateMAndD(s);syncSampleMAndDRecord(s);}});
+  const mdSeen={};
+  registerRecords().filter(r=>r.recordType==="MoistureDensity"&&!(r.payload&&r.payload.readOnlyLegacy)).forEach(r=>{
+    const id=String(r.pointId).trim().toUpperCase()+"|"+String(r.sampleId).trim().toUpperCase();
+    if(mdSeen[id])throw new Error("Two authoritative M&D records target the same 05 key "+id+". Keep one point/sample record.");mdSeen[id]=true;
+  });
+  let dirty=registerRecords().filter(r=>r._dirty&&!(r.payload&&r.payload.readOnlyLegacy));
+  dirty.forEach(r=>{
+    if(["MoistureDensity","DirectShear","Consolidation"].includes(r.recordType))validateFactualRecord(r);
+    if((r.recordType==="DesignShear"||r.recordType==="DesignConsolidation")&&(!r.payload.tedConfirmed||r.payload.confirmedBy!=="Ted"))throw new Error(r.recordType+" changed and must be explicitly reconfirmed by Ted before sync.");
+  });
+  dirty=registerRecords().filter(r=>r._dirty&&!(r.payload&&r.payload.readOnlyLegacy));
+  const byKey=new Map(dirty.map(r=>[r.recordKey,r])),parent=new Map(dirty.map(r=>[r.recordKey,r.recordKey]));
+  function find(k){let p=parent.get(k);while(p!==parent.get(p)){parent.set(p,parent.get(parent.get(p)));p=parent.get(p);}return p;}
+  function union(a,b){a=find(a);b=find(b);if(a!==b)parent.set(b,a);}
+  registerRecords().filter(r=>r.recordType==="DesignShear"||r.recordType==="DesignConsolidation").forEach(d=>{
+    Object.values((d.payload&&d.payload.fields)||{}).forEach(sel=>{
+      if(!byKey.has(sel.sourceRecordKey))return;
+      if(byKey.get(sel.sourceRecordKey)._projectionRepair)return;
+      if(!d._dirty)throw new Error("A revised factual source has a saved design dependency. Review and reconfirm the design in the same sync.");
+      union(d.recordKey,sel.sourceRecordKey);
+    });
+  });
+  const groups={};dirty.forEach(r=>{const root=find(r.recordKey);(groups[root]||(groups[root]=[])).push(r);});return Object.values(groups);
+}
+function recordEnvelope(r){
+  const out={clientRecordId:r.clientRecordId,recordKey:r.recordKey,recordType:r.recordType,pointId:r.pointId||"",sampleId:r.sampleId||"",depthFt:r.depthFt==null?null:r.depthFt,payload:r.payload};
+  if(Number.isInteger(r.revision)&&r.revision>=1){out.revision=r.revision;out.sourceHash=r.sourceHash;}
+  return out;
+}
+function packResults(){
+  const proj=currentProject();
+  return projSamples().map(s=>{
+    const c=computeSample(s);
+    if(c.moisturePct==null&&c.dryDensity==null)return null; // nothing measured yet
+    if(!s.pointId||s.sampleId===""||s.sampleId==null)return null;
+    return {
+      pointId:String(s.pointId),
+      sampleId:String(s.sampleId),
+      depth:s.depth===""||s.depth==null?"":s.depth,
+      dryDensityPcf:c.dryDensity==null?"":Number(c.dryDensity.toFixed(1)),
+      // 05_Lab_Results moisture column is percent-formatted in Sheets:
+      // existing rows store the fraction (0.169 -> 16.9%), so send fraction.
+      moistureFrac:c.moisturePct==null?"":Number((c.moisturePct/100).toFixed(4)),
+      uscs:s.uscs||"",
+      notes:s.notes||"",
+      _local:s
+    };
+  }).filter(Boolean);
+}
+
+document.getElementById("btnSyncAll").onclick=async function(){
+  const proj=currentProject();
+  const requestSeq=++projectRequestSeq;
+  if(!proj){setStatus("syncStatus","Pick or type a project first.","err");return;}
+  try{
+    let groups=dirtyRecordGroups();
+    if(!groups.length){setStatus("syncStatus","Nothing changed. Load the project register or enter a lab result first.","err");return;}
+    const allDirty=groups.reduce((all,group)=>all.concat(group),[]);
+    const allPreview=encodeURIComponent(JSON.stringify({action:"syncLabRegister",projectNumber:proj,records:allDirty.map(recordEnvelope)}));
+    if(allPreview.length<=7500)groups=[allDirty];
+    if(!confirm("Append "+groups.reduce((n,g)=>n+g.length,0)+" changed lab record(s) for "+proj+"?"))return;
+    let written=0,added=0,revised=0,unchanged=0;
+    for(let i=0;i<groups.length;i++){
+      if(projectRequestSeq!==requestSeq||currentProject()!==proj)throw new Error("Project changed during sync; remaining groups were cancelled.");
+      const payload=groups[i].map(recordEnvelope),encoded=encodeURIComponent(JSON.stringify({action:"syncLabRegister",projectNumber:proj,records:payload}));
+      if(encoded.length>7500)throw new Error("One dependency-safe sync group is too large for the JSONP bridge. Shorten notes/source labels and retry.");
+      setStatus("syncStatus","Syncing dependency-safe group "+(i+1)+" of "+groups.length+"…");
+      const token=document.getElementById("writeSecret").value;
+      if(!token)throw new Error("Enter the Lab write secret for this browser session.");
+      const snapshot=await labBridge("syncLabRegister",{projectNumber:proj,records:payload,token:token});
+      await verifySnapshot(snapshot,proj);
+      if(projectRequestSeq!==requestSeq||currentProject()!==proj)throw new Error("Project changed during sync; the response was not merged locally. Reload that project before editing.");
+      mergeRegisterSnapshot(snapshot,groups[i].map(r=>r.recordKey));
+      save();render();
+      written+=snapshot.written||0;added+=snapshot.added||0;revised+=snapshot.revised||0;unchanged+=snapshot.unchanged||0;
+    }
+    save();render();setStatus("syncStatus","Verified sync: "+written+" appended ("+added+" new, "+revised+" revised, "+unchanged+" unchanged).","ok");
+  }catch(err){
+    setStatus("syncStatus","Sync failed before/at guarded write: "+err.message+(String(err.message).indexOf("Unknown action")>=0?" — deploy the four LabBridgeAdditions actions.":""),"err");
+  }
+};
+
+document.getElementById("btnExportCsv").onclick=function(){
+  const proj=currentProject();
+  if(!proj){setStatus("syncStatus","Pick or type a project first.","err");return;}
+  const results=packResults();
+  if(!results.length){setStatus("syncStatus","Nothing to export yet.","err");return;}
+  const cc=v=>{v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const header="Lab Result App Key,Project Number,Point ID,Sample ID,Sample Depth ft,Dry Density pcf,Moisture Content %,Visual Classification,Notes / Description,Point Key,Sample Key";
+  const rows=results.map(r=>[
+    proj+"_"+r.pointId+"_LAB"+r.sampleId, proj, r.pointId, r.sampleId, r.depth,
+    r.dryDensityPcf, r.moistureFrac, r.uscs, r.notes,
+    proj+"|"+r.pointId, proj+"|"+r.pointId+"|"+r.sampleId
+  ].map(cc).join(","));
+  const blob=new Blob([header+"\n"+rows.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="out_05_LabResults_"+proj.replace(/[^\w-]+/g,"_")+".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus("syncStatus","Exported "+results.length+" row(s) as CSV.","ok");
+};
+
+// ── offline shell (PWA) ──
+// The service worker only caches the Lab Bench files; every other request on
+// this origin (field logger, project browser) passes straight to the network.
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  navigator.serviceWorker.register("lab_sw.js").catch(()=>{});
+}
+
+// ── init ──
+(function init(){
+  fillProjects();
+  document.getElementById("projectManual").value=state.currentProjectManual||"";
+  document.getElementById("defaultRingVol").value=state.defaultRingVol||"";
+  document.getElementById("defaultRingWt").value=state.defaultRingWt||"";
+  document.getElementById("defaultTareWt").value=state.defaultTareWt||"";
+  document.getElementById("writeSecret").value=sessionStorage.getItem(WRITE_SECRET_SESSION_KEY)||"";
+  render();
+})();
+</script>
+</body>
+</html>

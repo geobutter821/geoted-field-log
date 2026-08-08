@@ -225,13 +225,27 @@ function setupCard(){
 function openProjectFromEl(el){openProject(el.dataset.fid,el.dataset.pnum,el.dataset.pname)}
 function openFolderFromEl(el){openFolder(el.dataset.fid,el.dataset.fname,el.dataset.furl)}
 
+function normalizeProjects(result){
+  const projects=Array.isArray(result)?result:result&&Array.isArray(result.projects)?result.projects:null;
+  if(!projects)throw new Error("Project list response was invalid.");
+  return projects.map(p=>{
+    const subfolders=Array.isArray(p.subfolders)?p.subfolders:Object.entries(p.subfolders||{}).map(([name,folderUrl])=>({name,folderUrl}));
+    return {
+      ...p,
+      projectNumber:p.projectNumber||p.id||"",
+      name:p.name||[p.address,p.city].filter(Boolean).join(", ")||p.id||"Untitled project",
+      folderId:p.folderId||"",
+      folderUrl:p.folderUrl||"",
+      subfolders:subfolders.map(f=>({...f,folderId:f.folderId||"",folderUrl:f.folderUrl||"",fileCount:Number(f.fileCount)||0}))
+    };
+  });
+}
+
 async function loadProjects(){
   state.loading=true;render();
   try{
     const result=await bridge("listActiveProjects");
-    const projects=Array.isArray(result)?result:result&&Array.isArray(result.projects)?result.projects:null;
-    if(!projects)throw new Error("Project list response was invalid.");
-    state.projects=projects;
+    state.projects=normalizeProjects(result);
   }
   catch(e){toast(e.message)}
   finally{state.loading=false;render()}
@@ -240,14 +254,21 @@ async function loadProjects(){
 async function openProject(folderId,projectNumber,name){
   stopPoll();
   state.view="project";
-  state.project={folderId,projectNumber,name};
+  const project=state.projects.find(p=>p.projectNumber===projectNumber)||{folderId,projectNumber,name,subfolders:[]};
+  state.project={...project,folderId,projectNumber,name};
   state.subfolders=[];
   state.folder=null;
   state.folderFiles=[];
   state.status=null;
   state.loading=true;
   render();
-  try{state.subfolders=await bridge("listProjectFolders",{folderId});}
+  try{
+    state.subfolders=folderId
+      ? await bridge("listProjectFolders",{folderId})
+      : project.subfolders.length
+        ? project.subfolders
+        : [{name:"Figures",folderId:"",folderUrl:"",fileCount:0}];
+  }
   catch(e){toast(e.message)}
   finally{state.loading=false;render()}
 }
@@ -260,12 +281,12 @@ async function openFolder(folderId,folderName,folderUrl){
   state.loading=true;
   render();
   try{
-    state.folderFiles=await bridge("listFolderFiles",{folderId});
+    if(folderId)state.folderFiles=await bridge("listFolderFiles",{folderId});
     if(normalizeFolder(folderName)==="Figures"&&state.project){
       try{
         state.status=await bridge("getStatus",{projectNumber:state.project.projectNumber});
         state.lastStatusKey=statusKey(state.status);
-      }catch(e){}
+      }catch(e){toast(e.message)}
     }
   }catch(e){toast(e.message)}
   finally{state.loading=false;render()}

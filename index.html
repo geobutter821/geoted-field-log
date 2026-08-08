@@ -227,7 +227,12 @@ function openFolderFromEl(el){openFolder(el.dataset.fid,el.dataset.fname,el.data
 
 async function loadProjects(){
   state.loading=true;render();
-  try{state.projects=await bridge("listActiveProjects");}
+  try{
+    const result=await bridge("listActiveProjects");
+    const projects=Array.isArray(result)?result:result&&Array.isArray(result.projects)?result.projects:null;
+    if(!projects)throw new Error("Project list response was invalid.");
+    state.projects=projects;
+  }
   catch(e){toast(e.message)}
   finally{state.loading=false;render()}
 }
